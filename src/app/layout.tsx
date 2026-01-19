@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "Blood Donation Inventory",
-  description: "Track and manage blood donations with a modern Next.js app.",
+  title: "BloodLink - Blood Donation & Inventory Management",
+  description:
+    "Manage blood donations and inventory efficiently with BloodLink.",
 };
 
 export default function RootLayout({
@@ -11,10 +14,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  /* Layout wraps every page; use it to define html/body structure and shared UI. */
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow container mx-auto px-4 py-8">
+          {children}
+        </main>
+        <Footer />
+      </body>
     </html>
   );
 }
