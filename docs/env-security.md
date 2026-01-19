@@ -19,9 +19,4 @@ This project follows secure patterns for environment variables and secrets.
 
 - Use GitHub Secrets to inject env vars. The workflow reads `NEXT_PUBLIC_API_URL` and `DATABASE_URL` from secrets at build time.
 
-## Docker
-
-- Avoid baking secrets into images. Prefer passing runtime envs via `docker run -e KEY=value`.
-- Public values may be set via build args if needed, but never include private secrets in build args.
-
 See `src/lib/env.ts` for usage helpers and comments.

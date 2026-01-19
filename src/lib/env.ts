@@ -8,7 +8,7 @@
  *   server actions, database layers). Never import server-only functions into client components.
  *
  * Usage:
- * - Provide real values via runtime environment (.env files locally, GitHub Secrets in CI, Docker `-e`).
+ * - Provide real values via runtime environment (.env files locally, GitHub Secrets in CI).
  * - Do not hardcode secrets in source control. Only `.env.example` is committed as a template.
  */
 export const publicEnv = {

@@ -1,72 +1,82 @@
-# Real-Time Blood Donation & Inventory Management Platform
+# 🩸 BloodBridge - Real-Time Blood Donation & Inventory Management Platform
 
-> **Problem Statement :-**
+[![Next.js](https://img.shields.io/badge/Next.js-14-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-5.22-2D3748)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-316192)](https://www.postgresql.org/)
 
-India has milloins of willing blood donors , yet hospitals frequently face critical shortages. The issue isn't donation- it's _poor coordination, fragmented data, and outdated inventory systems_.
+## 📋 Problem Statement
+
+India has millions of willing blood donors, yet hospitals frequently face critical shortages. The issue isn't donation—it's **poor coordination, fragmented data, and outdated inventory systems**.
 
 Blood availability data is often:
-
-- Manually maintained
-- Not updated in real time
-- Disconnected between hospitals, NGOs and donors.
+- ❌ Manually maintained
+- ❌ Not updated in real-time
+- ❌ Disconnected between hospitals, NGOs, and donors
 
 This leads to **avoidable delays and loss of life during emergencies**.
+
+## 💡 Solution
+
 **BloodBridge** is a real-time, full-stack blood donation and inventory management platform that connects donors, hospitals, and NGOs on a single, secure system.
 
-The platform ensures:
+### Key Benefits
+- ✅ **Real-time inventory tracking** across blood banks
+- ✅ **Secure, verified access** for all stakeholders
+- ✅ **Emergency alerts** when blood is critically low
+- ✅ **Donor-hospital coordination** for faster response
+- ✅ **Analytics & insights** for better resource planning
 
-- Secure, verified access for all stakeholders
-- Emergency alerts when blood is critically low
+## 🎯 Core Features
 
-> **🎯 Core Features**
+### 👤 Donor Portal
+- 📍 Nearby hospital/NGO discovery using maps
+- 🔔 Emergency blood request notifications
+- 📊 Donation history tracking
+- 🏆 Donor rewards & badges
 
-**👤 Donor Portal**
+### 🏥 Hospital & Blood Bank Dashboard
+- 📈 Real-time blood inventory updates
+- ⚠️ Low-stock alerts (auto-triggered)
+- 🔍 Nearby donor discovery by blood group
+- 📝 Blood request management
+- 📊 Usage analytics & reporting
 
-- Nearby hospital / NGO discovery using maps
-- Emergency blood request notifications
-- Donation history tracking
+### 🤝 NGO / Admin Panel
+- ✅ Verify hospitals & donors
+- 🌍 Monitor city/region-wise blood availability
+- 🚨 Coordinate emergency donation drives
+- 📈 Access platform-wide analytics
 
-**🏥 Hospital & Blood Bank Dashboard**
+## 🛠️ Tech Stack
 
-- Real-time blood inventory updates
-- Low-stock alerts (auto-triggered)
-- Nearby donor discovery by blood group
-- Blood request management
-- Usage analytics & reporting
+### Frontend
+- **Next.js 14** – UI & App Router
+- **React 18** – Component library
+- **TypeScript** – Type safety
+- **Tailwind CSS** – Styling (future integration)
 
-**🤝 NGO / Admin Panel**
+### Backend
+- **Next.js API Routes** – RESTful API endpoints
+- **Prisma ORM** – Type-safe database access
+- **PostgreSQL** – Relational database
+- **bcrypt.js** – Password hashing
 
-- Verify hospitals & donors
-- Monitor city / region-wise blood availability
-- Coordinate emergency donation drives
-- Access platform-wide analytics
+### Database
+- **PostgreSQL 14+** – Normalized to 3NF
+- **Prisma** – Schema management & migrations
+- **Azure Database for PostgreSQL / AWS RDS** – Production hosting
 
-- Next.js – UI & routing
-- React – Building components
-- Tailwind CSS – Styling
-- Maps API – Location & nearby search
+### Authentication & Security
+- **JWT** – Secure token-based authentication
+- **Role-based access control** – Donor, Hospital, NGO, Admin
+- **Password hashing** – bcrypt with salt rounds
 
-**Backend**
-
-- Next.js API Routes – RESTful APIs
-- Prisma – Type-safe database ORM
-- PostgreSQL – Primary relational database
-- WebSockets – Real-time updates
-
-**Database**
-
-- PostgreSQL – Relational database (normalized to 3NF)
-- Prisma ORM – Type-safe database access
-- Azure Database for PostgreSQL / AWS RDS – Production hosting
-  **Authentication**
-
-- JWT – Secure login
-- Role-based access – Donor, Hospital, NGO
-
-**Cloud & Deployment**
-
-- AWS / Azure – Hosting & cloud services
-- Cloud Storage – Documents & reports
+### DevOps & Tools
+- **Git** – Version control
+- **ESLint & Prettier** – Code quality
+- **Husky** – Git hooks
+- **npm scripts** – Task automation
 
 ## 🗄️ Database Schema
 
