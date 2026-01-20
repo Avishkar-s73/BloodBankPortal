@@ -63,6 +63,7 @@ export async function GET(request: NextRequest) {
           purpose: true,
           requiredBy: true,
           createdAt: true,
+          fulfilledAt: true,
           // Include nested relations with selected fields
           requester: {
             select: {
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
               firstName: true,
               lastName: true,
               email: true,
-              phoneNumber: true,
+              phone: true,
             },
           },
           bloodBank: {
@@ -79,7 +80,14 @@ export async function GET(request: NextRequest) {
               name: true,
               city: true,
               state: true,
-              phoneNumber: true,
+              phone: true,
+            },
+          },
+          hospital: {
+            select: {
+              id: true,
+              name: true,
+              city: true,
             },
           },
         },
@@ -105,6 +113,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     // Log error for debugging (in production, use proper logging service)
+    // eslint-disable-next-line no-console
     console.error("Error fetching blood requests:", error);
 
     // Return error response with 500 status
@@ -124,23 +133,31 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/blood-requests
  *
- * Creates a new blood request
+ * Creates a new blood request with transactional inventory management
+ *
+ * CRITICAL TRANSACTION LOGIC:
+ * 1. Check if sufficient blood units exist in inventory
+ * 2. Create blood request with appropriate status
+ * 3. Reduce inventory quantity if blood is available
+ * 4. Rollback everything if any step fails
  *
  * Request Body:
  * {
- *   requesterId: string (UUID)
- *   bloodBankId: string (UUID)
- *   bloodGroup: BloodGroup enum
- *   quantityNeeded: number (units)
- *   patientName: string
- *   patientAge: number
- *   purpose: string
- *   requiredBy: Date (ISO string)
- *   urgency: "NORMAL" | "URGENT" | "CRITICAL"
+ *   requesterId: string (UUID) - User making the request
+ *   bloodBankId: string (UUID) - Blood bank to request from
+ *   bloodGroup: BloodGroup enum - Blood type needed
+ *   quantityNeeded: number - Units required (must be positive)
+ *   patientName: string - Patient name
+ *   patientAge: number - Patient age
+ *   purpose: string - Purpose of request
+ *   requiredBy: Date (ISO string) - When blood is needed
+ *   urgency: "NORMAL" | "URGENT" | "CRITICAL" (optional)
+ *   hospitalId: string (UUID) (optional) - Hospital making request
  * }
  *
  * Response:
- * - 201 Created: Request created successfully
+ * - 201 Created: Request created and fulfilled successfully
+ * - 202 Accepted: Request created but pending (insufficient inventory)
  * - 400 Bad Request: Validation error or missing required fields
  * - 404 Not Found: Requester or blood bank doesn't exist
  * - 500 Internal Server Error: Database or server error
@@ -242,58 +259,155 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create blood request in database
-    const bloodRequest = await prisma.bloodRequest.create({
-      data: {
-        requesterId: body.requesterId,
-        bloodBankId: body.bloodBankId,
-        bloodGroup: body.bloodGroup,
-        quantityNeeded: body.quantityNeeded,
-        patientName: body.patientName,
-        patientAge: body.patientAge,
-        purpose: body.purpose,
-        requiredBy: new Date(body.requiredBy),
-        urgency: body.urgency || "NORMAL",
-        status: RequestStatus.PENDING, // Default status for new requests
-        // Optional fields
-        patientGender: body.patientGender,
-        hospitalName: body.hospitalName,
-        doctorName: body.doctorName,
-        contactNumber: body.contactNumber,
-        additionalNotes: body.additionalNotes,
-      },
-      // Include related data in response
-      include: {
-        requester: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
+    // Verify hospital exists if provided
+    if (body.hospitalId) {
+      const hospital = await prisma.hospital.findUnique({
+        where: { id: body.hospitalId },
+      });
+
+      if (!hospital) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: "NOT_FOUND",
+              message: "Hospital not found",
+            },
+          },
+          { status: 404 }
+        );
+      }
+    }
+
+    // ========================================
+    // CRITICAL TRANSACTION LOGIC
+    // ========================================
+    // Use Prisma transaction to ensure atomicity
+    // Either all operations succeed or all are rolled back
+    const result = await prisma.$transaction(async (tx) => {
+      // Step 1: Check inventory availability
+      const inventory = await tx.bloodInventory.findUnique({
+        where: {
+          bloodBankId_bloodGroup: {
+            bloodBankId: body.bloodBankId,
+            bloodGroup: body.bloodGroup,
           },
         },
-        bloodBank: {
-          select: {
-            id: true,
-            name: true,
-            city: true,
-            state: true,
+      });
+
+      let requestStatus: RequestStatus;
+      let statusMessage: string;
+
+      // Step 2: Determine if request can be fulfilled
+      if (!inventory || inventory.quantity < body.quantityNeeded) {
+        // Insufficient blood units - create pending request
+        requestStatus = RequestStatus.PENDING;
+        statusMessage =
+          "Insufficient blood units available. Request marked as PENDING.";
+
+        console.log(
+          `[BLOOD REQUEST] Insufficient inventory for ${body.bloodGroup}. ` +
+            `Available: ${inventory?.quantity || 0}, Needed: ${
+              body.quantityNeeded
+            }`
+        );
+      } else {
+        // Sufficient blood units - fulfill immediately
+        requestStatus = RequestStatus.FULFILLED;
+        statusMessage = "Blood request fulfilled successfully.";
+
+        // Step 3: Reduce inventory quantity
+        await tx.bloodInventory.update({
+          where: {
+            bloodBankId_bloodGroup: {
+              bloodBankId: body.bloodBankId,
+              bloodGroup: body.bloodGroup,
+            },
+          },
+          data: {
+            quantity: {
+              decrement: body.quantityNeeded, // Atomic decrement
+            },
+            lastUpdated: new Date(),
+          },
+        });
+
+        console.log(
+          `[BLOOD REQUEST] Inventory updated. ${body.quantityNeeded} units of ` +
+            `${body.bloodGroup} deducted from blood bank ${body.bloodBankId}`
+        );
+      }
+
+      // Step 4: Create blood request record
+      const bloodRequest = await tx.bloodRequest.create({
+        data: {
+          requesterId: body.requesterId,
+          bloodBankId: body.bloodBankId,
+          hospitalId: body.hospitalId,
+          bloodGroup: body.bloodGroup,
+          quantityNeeded: body.quantityNeeded,
+          patientName: body.patientName,
+          patientAge: body.patientAge,
+          patientGender: body.patientGender,
+          purpose: body.purpose,
+          requiredBy: new Date(body.requiredBy),
+          urgency: body.urgency || "NORMAL",
+          status: requestStatus,
+          medicalNotes: body.medicalNotes,
+          doctorName: body.doctorName,
+          doctorContact: body.doctorContact,
+          // Set fulfillment timestamp if fulfilled immediately
+          fulfilledAt:
+            requestStatus === RequestStatus.FULFILLED ? new Date() : null,
+        },
+        // Include related data in response
+        include: {
+          requester: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+          bloodBank: {
+            select: {
+              id: true,
+              name: true,
+              city: true,
+              state: true,
+              phone: true,
+            },
+          },
+          hospital: {
+            select: {
+              id: true,
+              name: true,
+              city: true,
+            },
           },
         },
-      },
+      });
+
+      return { bloodRequest, statusMessage, requestStatus };
     });
 
-    // Return success response with 201 Created status
+    // Transaction successful - return appropriate response
+    const statusCode =
+      result.requestStatus === RequestStatus.FULFILLED ? 201 : 202;
+
     return NextResponse.json(
       {
         success: true,
-        message: "Blood request created successfully",
-        data: bloodRequest,
+        message: result.statusMessage,
+        data: result.bloodRequest,
       },
-      { status: 201 }
+      { status: statusCode }
     );
   } catch (error: any) {
     // Log error for debugging
+    // eslint-disable-next-line no-console
     console.error("Error creating blood request:", error);
 
     // Handle Prisma-specific errors
@@ -304,7 +418,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: {
             code: "INVALID_REFERENCE",
-            message: "Invalid requester or blood bank ID",
+            message: "Invalid requester, blood bank, or hospital ID",
           },
         },
         { status: 400 }

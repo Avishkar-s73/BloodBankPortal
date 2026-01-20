@@ -7,11 +7,6 @@
 
 import {
   User,
-  BloodBank,
-  Hospital,
-  BloodInventory,
-  BloodRequest,
-  Donation,
   UserRole,
   BloodGroup,
   RequestStatus,

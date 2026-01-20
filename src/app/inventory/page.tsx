@@ -12,9 +12,9 @@ import { useEffect, useState } from "react";
 interface BloodInventory {
   id: string;
   bloodGroup: string;
-  quantityMl: number;
-  lastUpdated: string;
-  bloodBank: {
+  quantityMl?: number;
+  lastUpdated?: string;
+  bloodBank?: {
     id: string;
     name: string;
     city: string;
@@ -272,19 +272,27 @@ export default function InventoryPage() {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      {item.quantityMl.toLocaleString()} ml
+                      {item.quantityMl?.toLocaleString() || "0"} ml
                     </td>
                     <td className="py-3 px-4">
                       <span className="font-semibold">
-                        {Math.floor(item.quantityMl / 450)} units
+                        {item.quantityMl
+                          ? Math.floor(item.quantityMl / 450)
+                          : 0}{" "}
+                        units
                       </span>
                     </td>
-                    <td className="py-3 px-4">{item.bloodBank.name}</td>
+                    <td className="py-3 px-4">
+                      {item.bloodBank?.name || "N/A"}
+                    </td>
                     <td className="py-3 px-4 text-gray-600">
-                      {item.bloodBank.city}, {item.bloodBank.state}
+                      {item.bloodBank?.city || "N/A"},{" "}
+                      {item.bloodBank?.state || "N/A"}
                     </td>
                     <td className="py-3 px-4 text-gray-500">
-                      {new Date(item.lastUpdated).toLocaleString()}
+                      {item.lastUpdated
+                        ? new Date(item.lastUpdated).toLocaleString()
+                        : "N/A"}
                     </td>
                   </tr>
                 ))}

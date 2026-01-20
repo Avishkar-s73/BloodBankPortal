@@ -3,7 +3,7 @@
  *
  * Handles blood inventory operations:
  * - GET /api/blood-inventory - List all blood inventory items
- * - POST /api/blood-inventory - Create a new inventory item
+ * - POST /api/blood-inventory - Create or update inventory item
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     if (bloodGroup) where.bloodGroup = bloodGroup;
     if (bloodBankId) where.bloodBankId = bloodBankId;
     if (minQuantity) {
-      where.quantityMl = {
+      where.quantity = {
         gte: parseInt(minQuantity),
       };
     }
@@ -77,35 +77,63 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/blood-inventory
  *
- * Creates a new blood inventory item
+ * Creates or updates blood inventory for a blood bank
  *
  * Request Body:
- * - bloodBankId: UUID of the blood bank
- * - bloodGroup: Blood group enum value
- * - quantityMl: Quantity in milliliters
+ * - bloodBankId: UUID of the blood bank (required)
+ * - bloodGroup: Blood group enum value (required)
+ * - quantity: Quantity in units (required, must be positive)
  *
  * Response:
- * - 201 Created: Returns the created inventory item
- * - 400 Bad Request: Invalid input data
+ * - 201 Created: Returns the created/updated inventory item
+ * - 400 Bad Request: Invalid input data or negative quantity
  * - 500 Internal Server Error: Database or server error
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { bloodBankId, bloodGroup, quantityMl } = body;
+    const { bloodBankId, bloodGroup, quantity } = body;
 
     // Validate required fields
-    if (!bloodBankId || !bloodGroup || quantityMl === undefined) {
+    if (!bloodBankId || !bloodGroup || quantity === undefined) {
       return NextResponse.json(
         {
           success: false,
-          error: "Missing required fields: bloodBankId, bloodGroup, quantityMl",
+          error: "Missing required fields: bloodBankId, bloodGroup, quantity",
         },
         { status: 400 }
       );
     }
 
-    // Create or update inventory
+    // Validate quantity is positive
+    if (quantity < 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Quantity cannot be negative",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Verify blood bank exists
+    const bloodBank = await prisma.bloodBank.findUnique({
+      where: { id: bloodBankId },
+    });
+
+    if (!bloodBank) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Blood bank not found",
+        },
+        { status: 404 }
+      );
+    }
+
+    // Create or update inventory using upsert
+    // If inventory exists for this blood bank + blood group, update quantity
+    // Otherwise, create new inventory record
     const inventory = await prisma.bloodInventory.upsert({
       where: {
         bloodBankId_bloodGroup: {
@@ -114,15 +142,15 @@ export async function POST(request: NextRequest) {
         },
       },
       update: {
-        quantityMl: {
-          increment: quantityMl,
+        quantity: {
+          increment: quantity, // Add to existing quantity
         },
         lastUpdated: new Date(),
       },
       create: {
         bloodBankId,
         bloodGroup,
-        quantityMl,
+        quantity,
         lastUpdated: new Date(),
       },
       include: {
