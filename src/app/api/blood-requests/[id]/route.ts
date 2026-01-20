@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { RequestStatus, BloodGroup } from "@prisma/client";
+import { RequestStatus } from "@prisma/client";
 
 /**
  * GET /api/blood-requests/[id]
@@ -25,7 +25,7 @@ import { RequestStatus, BloodGroup } from "@prisma/client";
  * - 500 Internal Server Error: Database or server error
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -40,7 +40,6 @@ export async function GET(
             firstName: true,
             lastName: true,
             email: true,
-            phoneNumber: true,
             role: true,
           },
         },
@@ -53,7 +52,6 @@ export async function GET(
             city: true,
             state: true,
             pincode: true,
-            phoneNumber: true,
             email: true,
             operatingHours: true,
           },
@@ -81,6 +79,7 @@ export async function GET(
       data: bloodRequest,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error("Error fetching blood request:", error);
 
     return NextResponse.json(
@@ -277,6 +276,7 @@ export async function PUT(
       data: bloodRequest,
     });
   } catch (error: any) {
+    // eslint-disable-next-line no-console
     console.error("Error updating blood request:", error);
 
     // Handle Prisma-specific errors
@@ -325,7 +325,7 @@ export async function PUT(
  * instead of hard delete to maintain audit trail
  */
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -340,6 +340,7 @@ export async function DELETE(
       message: "Blood request deleted successfully",
     });
   } catch (error: any) {
+    // eslint-disable-next-line no-console
     console.error("Error deleting blood request:", error);
 
     // Handle Prisma-specific errors
