@@ -17,6 +17,7 @@ export default function Header() {
     { href: "/dashboard", label: "Dashboard", icon: "📊" },
     { href: "/inventory", label: "Inventory", icon: "📦" },
     { href: "/requests", label: "Requests", icon: "📋" },
+    { href: "/hospitals", label: "Hospitals", icon: "🏥" },
   ];
 
   const isActive = (path: string) => pathname === path;

@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 interface BloodInventory {
   id: string;
   bloodGroup: string;
-  quantityMl?: number;
+  quantity?: number; // Quantity in units (1 unit = 450ml)
   lastUpdated?: string;
   bloodBank?: {
     id: string;
@@ -32,7 +32,7 @@ export default function InventoryPage() {
 
   // Form state
   const [bloodGroup, setBloodGroup] = useState("A_POSITIVE");
-  const [quantityMl, setQuantityMl] = useState("");
+  const [quantity, setQuantity] = useState("");
   const [bloodBankId, setBloodBankId] = useState("");
 
   // Blood group options
@@ -82,7 +82,7 @@ export default function InventoryPage() {
     setError(null);
 
     // Validate inputs
-    if (!quantityMl || parseInt(quantityMl) <= 0) {
+    if (!quantity || parseInt(quantity) <= 0) {
       setError("Please enter a valid quantity");
       return;
     }
@@ -102,7 +102,7 @@ export default function InventoryPage() {
         },
         body: JSON.stringify({
           bloodGroup,
-          quantityMl: parseInt(quantityMl),
+          quantity: parseInt(quantity),
           bloodBankId: bloodBankId.trim(),
         }),
       });
@@ -115,7 +115,7 @@ export default function InventoryPage() {
 
       // Success - show message and refresh inventory
       setSuccessMessage("Inventory updated successfully!");
-      setQuantityMl("");
+      setQuantity("");
       setBloodBankId("");
 
       // Refresh inventory list
@@ -129,22 +129,31 @@ export default function InventoryPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8">🏥 Blood Inventory</h1>
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-[#2E7D32] to-[#4CAF50] bg-clip-text text-transparent">
+          Blood Inventory
+        </h1>
+        <p className="text-gray-600 mt-2">
+          Manage blood donations and inventory levels
+        </p>
+      </div>
 
       {/* Add/Update Inventory Form */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">Add/Update Inventory</h2>
+      <div className="bg-gradient-to-br from-green-50 to-white rounded-2xl shadow-lg p-8 mb-8 border-l-4 border-green-500">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">
+          Add Blood Donation
+        </h2>
 
         {/* Success Message */}
         {successMessage && (
-          <div className="mb-4 p-3 bg-green-100 text-green-800 rounded">
+          <div className="mb-4 p-4 bg-green-100 text-green-800 rounded-lg border-l-4 border-green-500">
             {successMessage}
           </div>
         )}
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-800 rounded">
+          <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-lg border-l-4 border-red-500">
             {error}
           </div>
         )}
@@ -153,13 +162,13 @@ export default function InventoryPage() {
           <div className="grid md:grid-cols-3 gap-4">
             {/* Blood Group Dropdown */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Blood Group
               </label>
               <select
                 value={bloodGroup}
                 onChange={(e) => setBloodGroup(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
               >
                 {bloodGroups.map((group) => (
                   <option key={group} value={group}>
@@ -171,23 +180,26 @@ export default function InventoryPage() {
 
             {/* Quantity Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Quantity (ml)
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Quantity (units)
               </label>
               <input
                 type="number"
-                value={quantityMl}
-                onChange={(e) => setQuantityMl(e.target.value)}
-                placeholder="e.g., 450"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                placeholder="e.g., 2"
                 min="1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
                 required
               />
+              <p className="text-xs text-gray-500 mt-1">
+                1 unit = 450 ml of blood
+              </p>
             </div>
 
             {/* Blood Bank ID Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Blood Bank ID
               </label>
               <input
@@ -195,7 +207,7 @@ export default function InventoryPage() {
                 value={bloodBankId}
                 onChange={(e) => setBloodBankId(e.target.value)}
                 placeholder="Enter blood bank UUID"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
                 required
               />
             </div>
@@ -205,87 +217,97 @@ export default function InventoryPage() {
           <button
             type="submit"
             disabled={submitting}
-            className={`px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors ${
+            className={`px-8 py-3 bg-gradient-to-r from-[#2E7D32] to-[#4CAF50] text-white rounded-lg font-semibold hover:from-[#1B5E20] hover:to-[#2E7D32] transition-all shadow-md hover:shadow-lg ${
               submitting ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
-            {submitting ? "Submitting..." : "Add/Update Inventory"}
+            {submitting ? "Adding to inventory..." : "Add Blood Donation"}
           </button>
         </form>
 
-        <p className="text-sm text-gray-500 mt-4">
-          💡 Tip: If the blood group already exists for this blood bank, the
-          quantity will be added to the existing stock.
-        </p>
+        <div className="text-sm text-gray-600 mt-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+          <strong>Note:</strong> If the blood group already exists for this
+          blood bank, the quantity will be added to the existing stock.
+        </div>
       </div>
 
       {/* Inventory List */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Current Inventory</h2>
+      <div className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">
+            Current Inventory
+          </h2>
           <button
             onClick={fetchInventory}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+            className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
           >
-            🔄 Refresh
+            Refresh
           </button>
         </div>
 
         {/* Loading State */}
         {loading ? (
-          <div className="text-center py-8 text-gray-600">
-            Loading inventory...
+          <div className="text-center py-12 text-gray-600">
+            <p className="text-lg">Loading inventory...</p>
           </div>
         ) : inventory.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No inventory data available. Add some stock to get started!
+          <div className="text-center py-12 text-gray-500">
+            <p className="text-lg font-medium">No inventory data available</p>
+            <p className="text-sm mt-2">Add blood donations to get started</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b-2 border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold">
+                <tr className="border-b-2 border-gray-200 bg-gray-50">
+                  <th className="text-left py-4 px-4 font-bold text-gray-700">
                     Blood Group
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold">
-                    Quantity (ml)
+                  <th className="text-left py-4 px-4 font-bold text-gray-700">
+                    Units
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold">Units</th>
-                  <th className="text-left py-3 px-4 font-semibold">
+                  <th className="text-left py-4 px-4 font-bold text-gray-700">
+                    Volume (ml)
+                  </th>
+                  <th className="text-left py-4 px-4 font-bold text-gray-700">
                     Blood Bank
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold">
+                  <th className="text-left py-4 px-4 font-bold text-gray-700">
                     Location
                   </th>
-                  <th className="text-left py-3 px-4 font-semibold">
+                  <th className="text-left py-4 px-4 font-bold text-gray-700">
                     Last Updated
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {inventory.map((item) => (
-                  <tr key={item.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">
-                      <span className="font-semibold text-red-600 text-lg">
+                  <tr
+                    key={item.id}
+                    className="border-b hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="py-4 px-4">
+                      <span className="font-bold text-red-600 text-lg px-3 py-1 bg-red-50 rounded-full inline-block">
                         {item.bloodGroup.replace("_", " ")}
                       </span>
                     </td>
-                    <td className="py-3 px-4">
-                      {item.quantityMl?.toLocaleString() || "0"} ml
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className="font-semibold">
-                        {item.quantityMl
-                          ? Math.floor(item.quantityMl / 450)
-                          : 0}{" "}
-                        units
+                    <td className="py-4 px-4">
+                      <span className="font-semibold text-gray-800">
+                        {item.quantity?.toLocaleString() || "0"} units
                       </span>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-4 px-4">
+                      <span className="text-gray-600">
+                        {item.quantity
+                          ? (item.quantity * 450).toLocaleString()
+                          : 0}{" "}
+                        ml
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 font-medium">
                       {item.bloodBank?.name || "N/A"}
                     </td>
-                    <td className="py-3 px-4 text-gray-600">
+                    <td className="py-4 px-4 text-gray-600">
                       {item.bloodBank?.city || "N/A"},{" "}
                       {item.bloodBank?.state || "N/A"}
                     </td>
