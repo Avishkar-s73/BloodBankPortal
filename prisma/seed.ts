@@ -156,6 +156,99 @@ async function main() {
   });
   console.log("✅ Hospital created:", hospital1.name);
 
+  // Create Additional Hospitals for Alternative Sources Feature
+  const hospital2 = await prisma.hospital.upsert({
+    where: { email: "info@apollohospital.com" },
+    update: {},
+    create: {
+      name: "Apollo Hospital",
+      registrationNo: "HOSP-MH-002-2024",
+      email: "info@apollohospital.com",
+      phone: "+912227654321",
+      emergencyPhone: "+912227654322",
+      address: "Plot No. 23, Juhu",
+      city: "Mumbai",
+      state: "Maharashtra",
+      pincode: "400049",
+      latitude: 19.1075,
+      longitude: 72.8263,
+      totalBeds: 300,
+      hasBloodBank: true,
+      isActive: true,
+      isVerified: true,
+    },
+  });
+  console.log("✅ Hospital created:", hospital2.name);
+
+  const hospital3 = await prisma.hospital.upsert({
+    where: { email: "contact@lilavatihospital.com" },
+    update: {},
+    create: {
+      name: "Lilavati Hospital",
+      registrationNo: "HOSP-MH-003-2024",
+      email: "contact@lilavatihospital.com",
+      phone: "+912226567890",
+      emergencyPhone: "+912226567891",
+      address: "A-791, Bandra West",
+      city: "Mumbai",
+      state: "Maharashtra",
+      pincode: "400050",
+      latitude: 19.0544,
+      longitude: 72.828,
+      totalBeds: 400,
+      hasBloodBank: true,
+      isActive: true,
+      isVerified: true,
+    },
+  });
+  console.log("✅ Hospital created:", hospital3.name);
+
+  const hospital4 = await prisma.hospital.upsert({
+    where: { email: "info@fortishospital.com" },
+    update: {},
+    create: {
+      name: "Fortis Hospital",
+      registrationNo: "HOSP-DL-004-2024",
+      email: "info@fortishospital.com",
+      phone: "+911145678901",
+      emergencyPhone: "+911145678902",
+      address: "Sector 62, Noida",
+      city: "New Delhi",
+      state: "Delhi",
+      pincode: "110001",
+      latitude: 28.6139,
+      longitude: 77.209,
+      totalBeds: 600,
+      hasBloodBank: true,
+      isActive: true,
+      isVerified: true,
+    },
+  });
+  console.log("✅ Hospital created:", hospital4.name);
+
+  const hospital5 = await prisma.hospital.upsert({
+    where: { email: "contact@maxhospital.com" },
+    update: {},
+    create: {
+      name: "Max Super Speciality Hospital",
+      registrationNo: "HOSP-DL-005-2024",
+      email: "contact@maxhospital.com",
+      phone: "+911156789012",
+      emergencyPhone: "+911156789013",
+      address: "Saket, Press Enclave Road",
+      city: "New Delhi",
+      state: "Delhi",
+      pincode: "110017",
+      latitude: 28.5244,
+      longitude: 77.2066,
+      totalBeds: 550,
+      hasBloodBank: true,
+      isActive: true,
+      isVerified: true,
+    },
+  });
+  console.log("✅ Hospital created:", hospital5.name);
+
   // Create Donor Users
   const donorPassword = await bcrypt.hash("donor123", 10);
   const donor1 = await prisma.user.upsert({
