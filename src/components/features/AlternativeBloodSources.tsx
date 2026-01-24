@@ -45,6 +45,7 @@ export default function AlternativeBloodSources({
   const [sources, setSources] = useState<BloodSource[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [contactingId, setContactingId] = useState<string | null>(null);
 
   const fetchAlternativeSources = async () => {
     setLoading(true);
@@ -347,10 +348,33 @@ export default function AlternativeBloodSources({
             {onSourceSelect && (
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <button
-                  onClick={() => onSourceSelect(source)}
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg"
+                  onClick={() => {
+                    setContactingId(source.id);
+                    onSourceSelect(source);
+                    setTimeout(() => setContactingId(null), 3000);
+                  }}
+                  disabled={contactingId === source.id}
+                  className={`w-full px-6 py-3 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 ${
+                    contactingId === source.id
+                      ? 'bg-green-600 text-white cursor-default'
+                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700'
+                  }`}
                 >
-                  Contact This Source
+                  {contactingId === source.id ? (
+                    <>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Contact Initiated!
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      </svg>
+                      Contact This Source
+                    </>
+                  )}
                 </button>
               </div>
             )}

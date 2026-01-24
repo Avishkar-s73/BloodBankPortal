@@ -26,12 +26,39 @@ export default function EmergencyBloodFinderPage() {
   const [city, setCity] = useState("");
   const [minQuantity, setMinQuantity] = useState(1);
   const [showResults, setShowResults] = useState(false);
+  const [contactedSource, setContactedSource] = useState<string | null>(null);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedBloodGroup) {
       setShowResults(true);
     }
+  };
+
+  const handleSourceContact = (source: any) => {
+    setContactedSource(source.id);
+    
+    // Create contact message
+    const message = `Emergency Blood Request
+    
+Source: ${source.name}
+Blood Group: ${source.bloodGroup}
+Available Units: ${source.availableUnits || 'Contact for details'}
+    
+Contact Information:
+Phone: ${source.phone}
+${source.emergencyPhone ? `Emergency: ${source.emergencyPhone}` : ''}
+Email: ${source.email}
+Address: ${source.address}, ${source.city}, ${source.state}
+
+A notification has been sent. Please contact them directly using the information above.`;
+    
+    alert(message);
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      setContactedSource(null);
+    }, 3000);
   };
 
   const formatBloodGroup = (bg: string) => {
@@ -255,9 +282,7 @@ export default function EmergencyBloodFinderPage() {
               bloodGroup={selectedBloodGroup}
               city={city || undefined}
               minQuantity={minQuantity}
-              onSourceSelect={() => {
-                // You can add additional functionality here
-              }}
+              onSourceSelect={handleSourceContact}
             />
 
             <div className="mt-8 text-center">

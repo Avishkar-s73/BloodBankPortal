@@ -5,19 +5,64 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { 
+  Home, 
+  Droplet, 
+  Building2, 
+  Package, 
+  BarChart3, 
+  ClipboardList,
+  ChevronDown,
+  LogOut,
+  X,
+  Menu,
+  Lock,
+  Sparkles
+} from "lucide-react";
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout, loading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push("/");
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
+  };
+
+  const baseLinks = [{ href: "/", label: "Home", icon: Home }];
+
+  const roleLinks = user?.role === "DONOR"
+    ? [{ href: "/donor-dashboard", label: "Donor Dashboard", icon: Droplet }]
+    : user?.role === "HOSPITAL"
+    ? [
+        { href: "/hospital-dashboard", label: "Hospital Dashboard", icon: Building2 },
+      ]
+    : user?.role === "BLOOD_BANK"
+    ? [
+        { href: "/blood-bank-dashboard", label: "Blood Bank Dashboard", icon: Building2 },
+        { href: "/inventory", label: "Inventory", icon: Package },
+      ]
+    : [
+        { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
+        { href: "/inventory", label: "Inventory", icon: Package },
+        { href: "/requests", label: "Requests", icon: ClipboardList },
+      ];
 
   const navLinks = [
-    { href: "/", label: "Home", icon: "🏠" },
-    { href: "/dashboard", label: "Dashboard", icon: "📊" },
-    { href: "/inventory", label: "Inventory", icon: "📦" },
-    { href: "/requests", label: "Requests", icon: "📋" },
-    { href: "/hospitals", label: "Hospitals", icon: "🏥" },
+    ...baseLinks,
+    ...roleLinks,
+    // Show Blood Banks link to everyone except blood bank users (they don't need it in their navbar)
+    ...(user?.role === "BLOOD_BANK" ? [] : [{ href: "/blood-banks", label: "Blood Banks", icon: Building2 }]),
   ];
 
   const isActive = (path: string) => pathname === path;
@@ -32,7 +77,7 @@ export default function Header() {
             className="flex items-center gap-3 text-white no-underline transform transition-transform hover:scale-105"
           >
             <div className="bg-white rounded-xl p-3 text-2xl shadow-lg flex items-center justify-center">
-              🩸
+              <Droplet className="w-6 h-6 text-red-600" />
             </div>
             <div>
               <h1 className="text-2xl font-bold m-0 leading-none tracking-tight">
@@ -45,26 +90,80 @@ export default function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex gap-2 items-center">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`
-                  flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium
-                  transition-all duration-200 no-underline
-                  ${
-                    isActive(link.href)
-                      ? "bg-white/20 text-white shadow-inner"
-                      : "text-white/90 hover:bg-white/10 hover:text-white"
-                  }
-                `}
-              >
-                <span className="text-lg">{link.icon}</span>
-                <span>{link.label}</span>
-              </Link>
-            ))}
-          </nav>
+          {!loading && (
+            <nav className="hidden md:flex gap-2 items-center">
+              {user ? (
+                <>
+                  {navLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`
+                        flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium
+                        transition-all duration-200 no-underline
+                        ${
+                          isActive(link.href)
+                            ? "bg-white/20 text-white shadow-inner"
+                            : "text-white/90 hover:bg-white/10 hover:text-white"
+                        }
+                      `}
+                    >
+                      {link.icon && <link.icon className="w-4 h-4" />}
+                      <span>{link.label}</span>
+                    </Link>
+                  ))}
+                  
+                  {/* User Menu */}
+                  <div className="relative ml-2">
+                    <button
+                      onClick={() => setShowUserMenu(!showUserMenu)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="font-medium">{user.name.split(' ')[0]}</span>
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                    
+                    {showUserMenu && (
+                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl py-2 z-50">
+                        <div className="px-4 py-3 border-b border-gray-200">
+                          <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                          <p className="text-xs text-gray-500">{user.email}</p>
+                          <span className="inline-block mt-1 px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                            {user.role}
+                          </span>
+                        </div>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Logout
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="px-6 py-2.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg font-medium transition-all no-underline"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="px-6 py-2.5 bg-white text-red-600 hover:bg-gray-100 rounded-lg font-medium transition-all no-underline shadow-lg"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
+            </nav>
+          )}
 
           {/* Mobile Menu Button */}
           <button
@@ -72,32 +171,75 @@ export default function Header() {
             className="md:hidden bg-white/10 hover:bg-white/20 text-white p-3 rounded-lg transition-colors"
             aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? "✕" : "☰"}
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
 
         {/* Mobile Navigation */}
-        {mobileMenuOpen && (
+        {mobileMenuOpen && !loading && (
           <nav className="md:hidden pb-4 flex flex-col gap-2">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`
-                  flex items-center gap-3 px-4 py-3 rounded-lg font-medium
-                  transition-all duration-200 no-underline
-                  ${
-                    isActive(link.href)
-                      ? "bg-white/20 text-white"
-                      : "text-white/90 hover:bg-white/10 hover:text-white"
-                  }
-                `}
-              >
-                <span className="text-xl">{link.icon}</span>
-                <span>{link.label}</span>
-              </Link>
-            ))}
+            {user ? (
+              <>
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`
+                      flex items-center gap-3 px-4 py-3 rounded-lg font-medium
+                      transition-all duration-200 no-underline
+                      ${
+                        isActive(link.href)
+                          ? "bg-white/20 text-white"
+                          : "text-white/90 hover:bg-white/10 hover:text-white"
+                      }
+                    `}
+                  >
+                    {link.icon && <link.icon className="w-5 h-5" />}
+                    <span>{link.label}</span>
+                  </Link>
+                ))}
+                
+                {/* User Info in Mobile */}
+                <div className="border-t border-white/20 mt-2 pt-2 px-4 py-3">
+                  <p className="text-white font-medium text-sm">{user.name}</p>
+                  <p className="text-white/70 text-xs">{user.email}</p>
+                  <span className="inline-block mt-2 px-2 py-1 text-xs font-semibold rounded-full bg-white/20 text-white">
+                    {user.role}
+                  </span>
+                </div>
+                
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium bg-white/10 hover:bg-white/20 text-white transition-all"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Logout</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-white/90 hover:bg-white/10 hover:text-white transition-all no-underline"
+                >
+                  <Lock className="w-5 h-5" />
+                  <span>Login</span>
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium bg-white text-red-600 hover:bg-gray-100 transition-all no-underline"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  <span>Sign Up</span>
+                </Link>
+              </>
+            )}
           </nav>
         )}
       </div>

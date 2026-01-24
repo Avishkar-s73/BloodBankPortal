@@ -7,6 +7,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { DonationStatus } from "@prisma/client";
+import { jwtVerify } from "jose";
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || "your-secret-key-change-in-production"
+);
 
 // GET /api/donations
 export async function GET(request: NextRequest) {
@@ -18,6 +23,26 @@ export async function GET(request: NextRequest) {
     const donorId = searchParams.get("donorId");
     const bloodBankId = searchParams.get("bloodBankId");
     const bloodGroup = searchParams.get("bloodGroup");
+    const myDonations = searchParams.get("my") === "true";
+
+    // If filtering by current user, verify authentication
+    let userId: string | null = null;
+    if (myDonations) {
+      const cookieToken = request.cookies.get("auth-token")?.value;
+      const headerToken = request.headers
+        .get("authorization")
+        ?.replace("Bearer ", "");
+      const token = cookieToken || headerToken;
+
+      if (token) {
+        try {
+          const { payload } = await jwtVerify(token, JWT_SECRET);
+          userId = payload.userId as string;
+        } catch (error) {
+          console.error("Invalid token:", error);
+        }
+      }
+    }
 
     const skip = (page - 1) * limit;
 
@@ -25,6 +50,7 @@ export async function GET(request: NextRequest) {
     const where: any = {};
     if (status) where.status = status as DonationStatus;
     if (donorId) where.donorId = donorId;
+    if (userId) where.donorId = userId; // Filter by logged-in user
     if (bloodBankId) where.bloodBankId = bloodBankId;
     if (bloodGroup) where.bloodGroup = bloodGroup;
 
@@ -34,7 +60,7 @@ export async function GET(request: NextRequest) {
         where,
         skip,
         take: limit,
-        orderBy: { scheduledDate: "desc" },
+        orderBy: { donationDate: "desc" },
         include: {
           donor: {
             select: {

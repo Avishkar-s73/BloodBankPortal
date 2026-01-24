@@ -35,18 +35,21 @@ enum BloodGroup {
 }
 
 enum RequestStatus {
-  PENDING      // Request submitted
-  APPROVED     // Request approved by blood bank
-  FULFILLED    // Blood delivered
-  REJECTED     // Request rejected
-  CANCELLED    // Request cancelled by requester
+  PENDING              // Legacy - Request submitted
+  PENDING_APPROVAL     // Request awaiting blood bank review
+  APPROVED             // Request approved by blood bank
+  FULFILLED            // Blood delivered
+  REJECTED             // Request rejected
+  CANCELLED            // Request cancelled by requester
+  ESCALATED_TO_DONORS  // Insufficient inventory, escalated to donors
 }
 
 enum DonationStatus {
-  SCHEDULED    // Donation appointment scheduled
-  COMPLETED    // Donation completed
-  CANCELLED    // Donation cancelled
-  NO_SHOW      // Donor didn't show up
+  SCHEDULED           // Donation appointment scheduled
+  COMPLETED           // Donation completed
+  CANCELLED           // Donation cancelled
+  NO_SHOW             // Donor didn't show up
+  DONATION_CONFIRMED  // Donor confirmed intent to donate
 }
 
 enum Gender {
@@ -98,10 +101,11 @@ model User {
   updatedAt     DateTime @updatedAt
   
   // Relationships
-  donations     Donation[]     // User's donation history
-  bloodRequests BloodRequest[] // Requests made by user
-  bloodBank     BloodBank?     // If user is blood bank staff
-  hospital      Hospital?      // If user is hospital staff
+  donations       Donation[]       // User's donation history
+  bloodRequests   BloodRequest[]   // Requests made by user
+  donationIntents DonationIntent[] // Donor's volunteering intents
+  bloodBank       BloodBank?       // If user is blood bank staff
+  hospital        Hospital?        // If user is hospital staff
   
   // Indexes for frequently queried fields
   @@index([email])
@@ -154,6 +158,7 @@ model BloodBank {
   inventory       BloodInventory[]
   donations       Donation[]
   bloodRequests   BloodRequest[]
+  donationIntents DonationIntent[]
   
   // Indexes for location-based and frequently queried fields
   @@index([city])
@@ -277,7 +282,7 @@ model BloodRequest {
   doctorContact   String?
   
   // Request Status
-  status          RequestStatus @default(PENDING)
+  status          RequestStatus @default(PENDING_APPROVAL)
   rejectionReason String?       // Reason if rejected
   
   // Fulfillment Details
@@ -299,6 +304,9 @@ model BloodRequest {
   
   bloodBankId     String?       // Blood bank fulfilling the request
   bloodBank       BloodBank?    @relation(fields: [bloodBankId], references: [id], onDelete: SetNull)
+  
+  // Relationships
+  donationIntents DonationIntent[] // Donor volunteering for this request
   
   // Indexes for frequently queried fields
   @@index([requesterId])
@@ -407,6 +415,50 @@ model Notification {
   @@index([isRead])
   @@index([createdAt])
   @@map("notifications")
+}
+
+// ============================================
+// DONATION INTENT ENTITY
+// ============================================
+// Represents donor's intent to donate for escalated requests
+// Links donors to specific blood requests
+
+model DonationIntent {
+  id              String          @id @default(uuid())
+  
+  // Intent Details
+  status          DonationStatus  @default(DONATION_CONFIRMED)
+  
+  // Scheduling
+  preferredDate   DateTime?       // When donor prefers to donate
+  confirmedDate   DateTime?       // Confirmed appointment date
+  completedDate   DateTime?       // When donation was completed
+  
+  // Notes
+  donorNotes      String?         // Notes from donor
+  bloodBankNotes  String?         // Notes from blood bank
+  
+  // System Fields
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  // Foreign Keys
+  donorId         String
+  donor           User            @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  
+  requestId       String
+  request         BloodRequest    @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  
+  bloodBankId     String?
+  bloodBank       BloodBank?      @relation(fields: [bloodBankId], references: [id], onDelete: SetNull)
+  
+  // Indexes
+  @@index([donorId])
+  @@index([requestId])
+  @@index([bloodBankId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("donation_intents")
 }
 
 // Campaign for organizing blood donation drives

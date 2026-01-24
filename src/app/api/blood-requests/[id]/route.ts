@@ -371,3 +371,220 @@ export async function DELETE(
     );
   }
 }
+
+/**
+ * PATCH /api/blood-requests/[id]
+ *
+ * Partially updates a blood request - specifically for status changes
+ * Handles inventory deduction when fulfilling requests
+ *
+ * URL Parameters:
+ * - id: Blood request UUID
+ *
+ * Request Body:
+ * {
+ *   status: "APPROVED" | "FULFILLED" | "REJECTED" | "CANCELLED"
+ * }
+ *
+ * Response:
+ * - 200 OK: Request status updated successfully
+ * - 400 Bad Request: Validation error or insufficient inventory
+ * - 404 Not Found: Blood request doesn't exist
+ * - 500 Internal Server Error: Database or server error
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const body = await request.json();
+    const { status } = body;
+
+    if (!status) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Status is required",
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // Get the current blood request
+    const existingRequest = await prisma.bloodRequest.findUnique({
+      where: { id: params.id },
+      include: {
+        bloodBank: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!existingRequest) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "NOT_FOUND",
+            message: "Blood request not found",
+          },
+        },
+        { status: 404 }
+      );
+    }
+
+    // Use transaction for fulfillment to ensure inventory is updated atomically
+    if (status === "FULFILLED") {
+      const result = await prisma.$transaction(async (tx) => {
+        // Check inventory availability
+        const inventory = await tx.bloodInventory.findUnique({
+          where: {
+            bloodBankId_bloodGroup: {
+              bloodBankId: existingRequest.bloodBankId,
+              bloodGroup: existingRequest.bloodGroup,
+            },
+          },
+        });
+
+        if (!inventory || inventory.quantity < existingRequest.quantityNeeded) {
+          throw new Error(
+            `Insufficient inventory. Available: ${inventory?.quantity || 0}, Needed: ${existingRequest.quantityNeeded}`
+          );
+        }
+
+        // Deduct inventory
+        await tx.bloodInventory.update({
+          where: {
+            bloodBankId_bloodGroup: {
+              bloodBankId: existingRequest.bloodBankId,
+              bloodGroup: existingRequest.bloodGroup,
+            },
+          },
+          data: {
+            quantity: {
+              decrement: existingRequest.quantityNeeded,
+            },
+            lastUpdated: new Date(),
+          },
+        });
+
+        // Update request status to FULFILLED
+        const updatedRequest = await tx.bloodRequest.update({
+          where: { id: params.id },
+          data: {
+            status: "FULFILLED",
+            fulfilledAt: new Date(),
+          },
+          include: {
+            requester: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            bloodBank: {
+              select: {
+                id: true,
+                name: true,
+                city: true,
+                state: true,
+              },
+            },
+          },
+        });
+
+        return updatedRequest;
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: "Blood request fulfilled successfully. Inventory updated.",
+        data: result,
+      });
+    } else {
+      // For other status changes (APPROVED, REJECTED, CANCELLED)
+      const updatedRequest = await prisma.bloodRequest.update({
+        where: { id: params.id },
+        data: {
+          status: status as RequestStatus,
+          ...(status === "REJECTED" || status === "CANCELLED"
+            ? { fulfilledAt: null }
+            : {}),
+        },
+        include: {
+          requester: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          bloodBank: {
+            select: {
+              id: true,
+              name: true,
+              city: true,
+              state: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Blood request status updated to ${status}`,
+        data: updatedRequest,
+      });
+    }
+  } catch (error: any) {
+    console.error("Error updating blood request status:", error);
+
+    // Handle insufficient inventory error
+    if (error.message && error.message.includes("Insufficient inventory")) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "INSUFFICIENT_INVENTORY",
+            message: error.message,
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // Handle Prisma-specific errors
+    if (error.code === "P2025") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "NOT_FOUND",
+            message: "Blood request not found",
+          },
+        },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Failed to update blood request status",
+        },
+      },
+      { status: 500 }
+    );
+  }
+}

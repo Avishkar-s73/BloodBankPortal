@@ -301,9 +301,11 @@ async function main() {
   });
   console.log("✅ Donor created:", donor2.email);
 
-  // Create Sample Donations
-  await prisma.donation.create({
-    data: {
+  // Create Sample Donations (use upsert to avoid duplicate unitSerialNumber on repeated seeds)
+  await prisma.donation.upsert({
+    where: { unitSerialNumber: "UNIT-2025-001" },
+    update: {},
+    create: {
       donorId: donor1.id,
       bloodBankId: bloodBank1.id,
       bloodGroup: BloodGroup.O_POSITIVE,
@@ -321,7 +323,7 @@ async function main() {
       collectedBy: "Staff-001",
     },
   });
-  console.log("✅ Sample donation created");
+  console.log("✅ Sample donation ensured");
 
   // Create Sample Campaign
   await prisma.campaign.create({
@@ -342,6 +344,184 @@ async function main() {
     },
   });
   console.log("✅ Sample campaign created");
+
+  // Additional blood banks seeding (Pune, Jaipur, Lucknow, Bengaluru, Hyderabad, Kolkata, Ahmedabad, Surat, Patna, Chennai)
+  const additionalBanks = [
+    {
+      name: "Pune Care Blood Bank",
+      email: "contact@punecarebb.com",
+      registrationNo: "BB-PU-003-2024",
+      phone: "+912027890001",
+      address: "12 FC Road",
+      city: "Pune",
+      state: "Maharashtra",
+      pincode: "411004",
+      latitude: 18.5167,
+      longitude: 73.8567,
+      operatingHours: "9 AM - 6 PM",
+    },
+    {
+      name: "Jaipur Life Blood Bank",
+      email: "info@jaipurlifebb.com",
+      registrationNo: "BB-RJ-004-2024",
+      phone: "+911412345678",
+      address: "5 MI Road",
+      city: "Jaipur",
+      state: "Rajasthan",
+      pincode: "302001",
+      latitude: 26.9124,
+      longitude: 75.7873,
+      operatingHours: "8 AM - 8 PM",
+    },
+    {
+      name: "Lucknow Blood Center",
+      email: "contact@lucknowbb.com",
+      registrationNo: "BB-UP-005-2024",
+      phone: "+915222345678",
+      address: "Station Road",
+      city: "Lucknow",
+      state: "Uttar Pradesh",
+      pincode: "226001",
+      latitude: 26.8467,
+      longitude: 80.9462,
+      operatingHours: "9 AM - 5 PM",
+    },
+    {
+      name: "Bengaluru Central Blood Bank",
+      email: "contact@bangalorebb.com",
+      registrationNo: "BB-KA-006-2024",
+      phone: "+918026789012",
+      address: "MG Road",
+      city: "Bengaluru",
+      state: "Karnataka",
+      pincode: "560001",
+      latitude: 12.9716,
+      longitude: 77.5946,
+      operatingHours: "24/7",
+    },
+    {
+      name: "Hyderabad Blood Bank",
+      email: "info@hyderabadbb.com",
+      registrationNo: "BB-TG-007-2024",
+      phone: "+914023456789",
+      address: "Koti",
+      city: "Hyderabad",
+      state: "Telangana",
+      pincode: "500001",
+      latitude: 17.3850,
+      longitude: 78.4867,
+      operatingHours: "9 AM - 9 PM",
+    },
+    {
+      name: "Kolkata Blood Services",
+      email: "contact@kolkatabb.com",
+      registrationNo: "BB-WB-008-2024",
+      phone: "+913322345678",
+      address: "Park Street",
+      city: "Kolkata",
+      state: "West Bengal",
+      pincode: "700016",
+      latitude: 22.5726,
+      longitude: 88.3639,
+      operatingHours: "8 AM - 8 PM",
+    },
+    {
+      name: "Ahmedabad Regional Blood Bank",
+      email: "info@ahmedabadbb.com",
+      registrationNo: "BB-GJ-009-2024",
+      phone: "+912792345678",
+      address: "C G Road",
+      city: "Ahmedabad",
+      state: "Gujarat",
+      pincode: "380009",
+      latitude: 23.0225,
+      longitude: 72.5714,
+      operatingHours: "9 AM - 6 PM",
+    },
+    {
+      name: "Surat Blood Bank",
+      email: "contact@suratbb.com",
+      registrationNo: "BB-GJ-010-2024",
+      phone: "+912612345678",
+      address: "Ring Road",
+      city: "Surat",
+      state: "Gujarat",
+      pincode: "395003",
+      latitude: 21.1702,
+      longitude: 72.8311,
+      operatingHours: "9 AM - 5 PM",
+    },
+    {
+      name: "Patna Blood Center",
+      email: "info@patnabb.com",
+      registrationNo: "BB-BR-011-2024",
+      phone: "+916122345678",
+      address: "Ashok Rajpath",
+      city: "Patna",
+      state: "Bihar",
+      pincode: "800001",
+      latitude: 25.5941,
+      longitude: 85.1376,
+      operatingHours: "8 AM - 6 PM",
+    },
+    {
+      name: "Chennai Lifesavers",
+      email: "contact@chennaibb.com",
+      registrationNo: "BB-TN-012-2024",
+      phone: "+914423456789",
+      address: "Anna Salai",
+      city: "Chennai",
+      state: "Tamil Nadu",
+      pincode: "600002",
+      latitude: 13.0827,
+      longitude: 80.2707,
+      operatingHours: "9 AM - 8 PM",
+    },
+  ];
+
+  for (const b of additionalBanks) {
+    const bank = await prisma.bloodBank.upsert({
+      where: { email: b.email },
+      update: {},
+      create: {
+        name: b.name,
+        registrationNo: b.registrationNo,
+        email: b.email,
+        phone: b.phone,
+        address: b.address,
+        city: b.city,
+        state: b.state,
+        pincode: b.pincode,
+        latitude: b.latitude,
+        longitude: b.longitude,
+        operatingHours: b.operatingHours,
+        isActive: true,
+        isVerified: true,
+      },
+    });
+    console.log("✅ Blood Bank created:", bank.name);
+
+    // Create inventory for this bank
+    for (const bloodGroup of bloodGroups) {
+      await prisma.bloodInventory.upsert({
+        where: {
+          bloodBankId_bloodGroup: {
+            bloodBankId: bank.id,
+            bloodGroup: bloodGroup,
+          },
+        },
+        update: {},
+        create: {
+          bloodBankId: bank.id,
+          bloodGroup: bloodGroup,
+          quantity: Math.floor(Math.random() * 50) + 10,
+          minimumQuantity: 5,
+          maximumQuantity: 100,
+        },
+      });
+    }
+    console.log("   → Inventory created for:", bank.name);
+  }
 
   console.log("🎉 Database seeded successfully!");
 }

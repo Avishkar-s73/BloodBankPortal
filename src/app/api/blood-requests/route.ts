@@ -9,6 +9,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { BloodGroup, RequestStatus } from "@prisma/client";
+import { jwtVerify } from "jose";
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || "your-secret-key-change-in-production"
+);
 
 /**
  * GET /api/blood-requests
@@ -21,6 +26,7 @@ import { BloodGroup, RequestStatus } from "@prisma/client";
  * - status: Filter by status (PENDING, APPROVED, REJECTED, FULFILLED, CANCELLED)
  * - urgency: Filter by urgency (NORMAL, URGENT, CRITICAL)
  * - bloodGroup: Filter by blood group (A_POSITIVE, B_POSITIVE, etc.)
+ * - my: Set to 'true' to filter requests created by the logged-in user
  *
  * Response:
  * - 200 OK: Returns array of blood requests with pagination metadata
@@ -35,6 +41,46 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") as RequestStatus | null;
     const urgency = searchParams.get("urgency");
     const bloodGroup = searchParams.get("bloodGroup") as BloodGroup | null;
+    const myRequests = searchParams.get("my") === "true";
+
+    // Check authentication to get user info
+    let userId: string | null = null;
+    let userRole: string | null = null;
+    let bloodBankId: string | null = null;
+    let hospitalId: string | null = null;
+    
+    const cookieToken = request.cookies.get("auth-token")?.value;
+    const headerToken = request.headers
+      .get("authorization")
+      ?.replace("Bearer ", "");
+    const token = cookieToken || headerToken;
+
+    if (token) {
+      try {
+        const { payload } = await jwtVerify(token, JWT_SECRET);
+        userId = payload.userId as string;
+        userRole = payload.role as string;
+        console.log(`[BLOOD REQUEST API] User: ${userId}, Role: ${userRole}`);
+        
+        // If user is a blood bank, get their blood bank ID
+        if (userRole === "BLOOD_BANK") {
+          const bloodBank = await prisma.bloodBank.findFirst({
+            where: { managerId: userId },
+            select: { id: true, name: true }
+          });
+          bloodBankId = bloodBank?.id || null;
+          console.log(`[BLOOD REQUEST API] Blood Bank: ${bloodBank?.name || 'NOT FOUND'}, ID: ${bloodBankId}`);
+        }
+        // If user is a hospital, get their hospital ID
+        if (userRole === "HOSPITAL") {
+          const hospital = await prisma.hospital.findFirst({ where: { contactPersonId: userId }, select: { id: true, name: true } });
+          hospitalId = hospital?.id || null;
+          console.log(`[BLOOD REQUEST API] Hospital: ${hospital?.name || 'NOT FOUND'}, ID: ${hospitalId}`);
+        }
+      } catch (error) {
+        console.error("Invalid token:", error);
+      }
+    }
 
     // Calculate pagination offset
     const skip = (page - 1) * limit;
@@ -44,6 +90,30 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status;
     if (urgency) where.urgency = urgency;
     if (bloodGroup) where.bloodGroup = bloodGroup;
+    
+    // Filter by requester or hospital if 'my=true' parameter
+    if (myRequests && userId) {
+      if (userRole === "HOSPITAL") {
+        // For hospital users, 'my' should mean requests created by their hospital
+        if (hospitalId) {
+          where.hospitalId = hospitalId;
+        } else {
+          // No hospital found for this user; return empty
+          where.hospitalId = null;
+        }
+      } else {
+        // For other users, 'my' means requests made by the user
+        where.requesterId = userId;
+      }
+    }
+    
+    // Filter by blood bank if user is a blood bank
+    if (userRole === "BLOOD_BANK" && bloodBankId && !myRequests) {
+      where.bloodBankId = bloodBankId;
+      console.log(`[BLOOD REQUEST API] Filtering by bloodBankId: ${bloodBankId}`);
+    }
+    
+    console.log(`[BLOOD REQUEST API] Final where clause:`, JSON.stringify(where));
 
     // Execute parallel queries for data and count (performance optimization)
     const [requests, total] = await Promise.all([
@@ -167,6 +237,37 @@ export async function POST(request: NextRequest) {
     // Parse JSON body
     const body = await request.json();
 
+    // Attempt to extract logged-in user from JWT so we can auto-fill requester/hospital
+    let tokenUserId: string | null = null;
+    let tokenUserRole: string | null = null;
+    let tokenHospitalId: string | null = null;
+    const cookieToken = request.cookies.get("auth-token")?.value;
+    const headerToken = request.headers.get("authorization")?.replace("Bearer ", "");
+    const token = cookieToken || headerToken;
+    if (token) {
+      try {
+        const { payload } = await jwtVerify(token, JWT_SECRET);
+        tokenUserId = payload.userId as string;
+        tokenUserRole = payload.role as string;
+        // If hospital user, find their hospital id
+        if (tokenUserRole === "HOSPITAL") {
+          const hosp = await prisma.hospital.findFirst({ where: { contactPersonId: tokenUserId }, select: { id: true } });
+          tokenHospitalId = hosp?.id || null;
+        }
+      } catch (err) {
+        console.error("Invalid token in POST /api/blood-requests:", err);
+      }
+    }
+
+    // Auto-fill requesterId from token when available
+    if (!body.requesterId && tokenUserId) {
+      body.requesterId = tokenUserId;
+    }
+    // Auto-fill hospitalId for hospital users if not provided
+    if ((!body.hospitalId || body.hospitalId === null) && tokenUserRole === "HOSPITAL" && tokenHospitalId) {
+      body.hospitalId = tokenHospitalId;
+    }
+
     // Validate required fields
     const requiredFields = [
       "requesterId",
@@ -285,7 +386,7 @@ export async function POST(request: NextRequest) {
     // Use Prisma transaction to ensure atomicity
     // Either all operations succeed or all are rolled back
     const result = await prisma.$transaction(async (tx) => {
-      // Step 1: Check inventory availability
+      // Step 1: Check inventory availability (for informational purposes only)
       const inventory = await tx.bloodInventory.findUnique({
         where: {
           bloodBankId_bloodGroup: {
@@ -295,50 +396,17 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      let requestStatus: RequestStatus;
-      let statusMessage: string;
+      // Step 2: Always create request as PENDING_APPROVAL
+      // Blood bank must manually approve or escalate requests
+      const requestStatus: RequestStatus = RequestStatus.PENDING_APPROVAL;
+      const statusMessage = "Blood request created successfully. Awaiting blood bank approval.";
 
-      // Step 2: Determine if request can be fulfilled
-      if (!inventory || inventory.quantity < body.quantityNeeded) {
-        // Insufficient blood units - create pending request
-        requestStatus = RequestStatus.PENDING;
-        statusMessage =
-          "Insufficient blood units available. Request marked as PENDING.";
+      console.log(
+        `[BLOOD REQUEST] Creating PENDING request for ${body.bloodGroup}. ` +
+          `Available inventory: ${inventory?.quantity || 0}, Needed: ${body.quantityNeeded}`
+      );
 
-        console.log(
-          `[BLOOD REQUEST] Insufficient inventory for ${body.bloodGroup}. ` +
-            `Available: ${inventory?.quantity || 0}, Needed: ${
-              body.quantityNeeded
-            }`
-        );
-      } else {
-        // Sufficient blood units - fulfill immediately
-        requestStatus = RequestStatus.FULFILLED;
-        statusMessage = "Blood request fulfilled successfully.";
-
-        // Step 3: Reduce inventory quantity
-        await tx.bloodInventory.update({
-          where: {
-            bloodBankId_bloodGroup: {
-              bloodBankId: body.bloodBankId,
-              bloodGroup: body.bloodGroup,
-            },
-          },
-          data: {
-            quantity: {
-              decrement: body.quantityNeeded, // Atomic decrement
-            },
-            lastUpdated: new Date(),
-          },
-        });
-
-        console.log(
-          `[BLOOD REQUEST] Inventory updated. ${body.quantityNeeded} units of ` +
-            `${body.bloodGroup} deducted from blood bank ${body.bloodBankId}`
-        );
-      }
-
-      // Step 4: Create blood request record
+      // Step 3: Create blood request record
       const bloodRequest = await tx.bloodRequest.create({
         data: {
           requesterId: body.requesterId,
@@ -356,9 +424,7 @@ export async function POST(request: NextRequest) {
           medicalNotes: body.medicalNotes,
           doctorName: body.doctorName,
           doctorContact: body.doctorContact,
-          // Set fulfillment timestamp if fulfilled immediately
-          fulfilledAt:
-            requestStatus === RequestStatus.FULFILLED ? new Date() : null,
+          fulfilledAt: null, // Not fulfilled yet
         },
         // Include related data in response
         include: {
@@ -393,17 +459,14 @@ export async function POST(request: NextRequest) {
       return { bloodRequest, statusMessage, requestStatus };
     });
 
-    // Transaction successful - return appropriate response
-    const statusCode =
-      result.requestStatus === RequestStatus.FULFILLED ? 201 : 202;
-
+    // Transaction successful - return created response
     return NextResponse.json(
       {
         success: true,
         message: result.statusMessage,
         data: result.bloodRequest,
       },
-      { status: statusCode }
+      { status: 201 } // 201 Created - Request created and awaiting approval
     );
   } catch (error: any) {
     // Log error for debugging

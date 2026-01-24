@@ -8,6 +8,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { jwtVerify } from "jose";
+
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || "your-secret-key-change-in-production"
+);
 import { BloodGroup } from "@prisma/client";
 
 /**
@@ -38,6 +43,26 @@ export async function GET(request: NextRequest) {
       where.quantity = {
         gte: parseInt(minQuantity),
       };
+    }
+
+    // If the requester is a blood bank user, restrict results to their blood bank only.
+    try {
+      const cookieToken = request.cookies.get("auth-token")?.value;
+      const headerToken = request.headers.get("authorization")?.replace("Bearer ", "");
+      const token = cookieToken || headerToken;
+      if (token) {
+        const { payload } = await jwtVerify(token, JWT_SECRET);
+        const userId = payload.userId as string | undefined;
+        if (userId) {
+          const managedBank = await prisma.bloodBank.findFirst({ where: { managerId: userId } });
+          if (managedBank) {
+            // override any requested bloodBankId — a blood bank user should only see their own inventory
+            where.bloodBankId = managedBank.id;
+          }
+        }
+      }
+    } catch (e) {
+      // ignore token errors and continue with provided filters
     }
 
     const inventory = await prisma.bloodInventory.findMany({
@@ -92,7 +117,26 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { bloodBankId, bloodGroup, quantity } = body;
+    let { bloodBankId, bloodGroup, quantity } = body;
+
+    // If the requester is a logged-in blood bank manager, use their managed blood bank id
+    try {
+      const cookieToken = request.cookies.get("auth-token")?.value;
+      const headerToken = request.headers.get("authorization")?.replace("Bearer ", "");
+      const token = cookieToken || headerToken;
+      if (token) {
+        const { payload } = await jwtVerify(token, JWT_SECRET);
+        const userId = payload.userId as string | undefined;
+        if (userId) {
+          const managedBank = await prisma.bloodBank.findFirst({ where: { managerId: userId } });
+          if (managedBank) {
+            bloodBankId = managedBank.id;
+          }
+        }
+      }
+    } catch (e) {
+      // ignore token errors; fall back to provided bloodBankId
+    }
 
     // Validate required fields
     if (!bloodBankId || !bloodGroup || quantity === undefined) {
