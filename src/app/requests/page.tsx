@@ -7,6 +7,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 // Type definitions
 interface BloodRequest {
@@ -28,6 +30,7 @@ interface BloodRequest {
 }
 
 export default function BloodRequestsPage() {
+  const { user } = useAuth();
   // State management
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,9 +64,18 @@ export default function BloodRequestsPage() {
   const urgencyLevels = ["NORMAL", "URGENT", "CRITICAL"];
 
   // Fetch requests on component mount
+  const router = useRouter();
+
   useEffect(() => {
+    // If logged in as hospital, redirect to hospital dashboard and do not show requests page
+    if (user && user.role === "HOSPITAL") {
+      router.replace("/hospital-dashboard");
+      return;
+    }
+
+    // refetch when auth user becomes available
     fetchRequests();
-  }, []);
+  }, [user]);
 
   // Function to fetch all blood requests
   const fetchRequests = async () => {
@@ -71,7 +83,13 @@ export default function BloodRequestsPage() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("/api/blood-requests");
+      // If logged-in hospital, request only its own requests
+      let url = "/api/blood-requests";
+      if (user && user.role === "HOSPITAL") {
+        url += "?my=true";
+      }
+
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error("Failed to fetch requests");

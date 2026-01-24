@@ -34,6 +34,8 @@ export default function InventoryPage() {
   const [bloodGroup, setBloodGroup] = useState("A_POSITIVE");
   const [quantity, setQuantity] = useState("");
   const [bloodBankId, setBloodBankId] = useState("");
+  const [bloodBankName, setBloodBankName] = useState<string | null>(null);
+  const [bankFieldLocked, setBankFieldLocked] = useState(false);
 
   // Blood group options
   const bloodGroups = [
@@ -50,7 +52,25 @@ export default function InventoryPage() {
   // Fetch inventory on component mount
   useEffect(() => {
     fetchInventory();
+    fetchManagedBank();
   }, []);
+
+  // Fetch managed blood bank for logged-in user and auto-fill the bloodBankId field
+  const fetchManagedBank = async () => {
+    try {
+      const res = await fetch("/api/auth/verify", { credentials: "include" });
+      if (!res.ok) return;
+      const body = await res.json();
+      const managed = body?.data?.managedBloodBank;
+      if (managed) {
+        setBloodBankId(managed.id);
+        setBloodBankName(managed.name || null);
+        setBankFieldLocked(true);
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
 
   // Function to fetch inventory from API
   const fetchInventory = async () => {
@@ -202,14 +222,21 @@ export default function InventoryPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Blood Bank ID
               </label>
-              <input
-                type="text"
-                value={bloodBankId}
-                onChange={(e) => setBloodBankId(e.target.value)}
-                placeholder="Enter blood bank UUID"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
-                required
-              />
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={bloodBankId}
+                  onChange={(e) => setBloodBankId(e.target.value)}
+                  placeholder="Enter blood bank UUID"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                  required
+                  readOnly={bankFieldLocked}
+                  disabled={bankFieldLocked}
+                />
+                {bankFieldLocked && (
+                  <span className="text-sm text-gray-600">{bloodBankName}</span>
+                )}
+              </div>
             </div>
           </div>
 

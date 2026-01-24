@@ -33,13 +33,26 @@ interface AuthContextType {
 interface RegisterData {
   email: string;
   password: string;
-  name: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
   role: "DONOR" | "HOSPITAL" | "BLOOD_BANK";
   bloodGroup?: string;
-  phone?: string;
   address?: string;
   city?: string;
   state?: string;
+  bloodBankId?: string;
+  hospitalId?: string;
+  bloodBankData?: {
+    name?: string;
+    registrationNo?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    operatingHours?: string;
+  };
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,8 +73,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
+        const result = await response.json();
+        const userData = result.data.user;
+        setUser({
+          id: userData.id,
+          email: userData.email,
+          name: `${userData.firstName} ${userData.lastName}`,
+          role: userData.role,
+          bloodGroup: userData.bloodGroup,
+        });
       } else {
         setUser(null);
       }
@@ -86,8 +106,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(error.error || "Login failed");
       }
 
-      const data = await response.json();
-      setUser(data.user);
+      const result = await response.json();
+      
+      // Combine firstName and lastName for display
+      const userData = result.data.user;
+      setUser({
+        id: userData.id,
+        email: userData.email,
+        name: `${userData.firstName} ${userData.lastName}`,
+        role: userData.role,
+        bloodGroup: userData.bloodGroup,
+      });
     } catch (error) {
       throw error;
     }
@@ -101,15 +130,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(data),
         credentials: "include",
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Registration failed");
+      // try to parse body for better debugging on failure
+      const text = await response.text();
+      let body: any = null;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch (e) {
+        body = { raw: text };
       }
 
-      const result = await response.json();
-      setUser(result.user);
+      if (!response.ok) {
+        const message = body?.error || body?.message || body?.raw || `Registration failed (${response.status})`;
+        console.error("[register] server response:", response.status, body);
+        throw new Error(message);
+      }
+
+      const result = body;
+      // Registration successful - now login with the credentials
+      if (result && result.success) {
+        await login(data.email, data.password);
+      }
     } catch (error) {
+      // surface helpful info in console then rethrow for UI handling
+      console.error("[register] error:", error);
       throw error;
     }
   };

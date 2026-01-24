@@ -73,6 +73,16 @@ export async function GET(request: NextRequest) {
           { status: 403 }
         );
       }
+      // Also try to find a blood bank managed by this user (if any)
+      const managedBloodBank = await prisma.bloodBank.findFirst({
+        where: { managerId: user.id },
+        select: {
+          id: true,
+          name: true,
+          city: true,
+          state: true,
+        },
+      });
 
       return NextResponse.json(
         {
@@ -80,6 +90,7 @@ export async function GET(request: NextRequest) {
           data: {
             user,
             isAuthenticated: true,
+            managedBloodBank: managedBloodBank || null,
           },
         },
         { status: 200 }

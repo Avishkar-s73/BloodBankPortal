@@ -2,6 +2,8 @@
  * Footer - Clean footer component with Tailwind CSS
  */
 
+import { Droplet, Phone } from "lucide-react";
+
 export default function Footer() {
   return (
     <footer className="bg-gray-100 border-t border-gray-200 mt-auto py-8">
@@ -10,7 +12,7 @@ export default function Footer() {
           {/* Brand Section */}
           <div>
             <h3 className="text-lg font-semibold mb-4 text-gray-900 flex items-center gap-2">
-              <span className="text-2xl">🩸</span>
+              <Droplet className="w-5 h-5 text-red-600" />
               BloodLink
             </h3>
             <p className="text-gray-600 text-sm leading-relaxed">
@@ -67,7 +69,10 @@ export default function Footer() {
             </h4>
             <ul className="list-none p-0 m-0 space-y-2">
               <li className="text-gray-600 text-sm">📧 info@bloodlink.com</li>
-              <li className="text-gray-600 text-sm">📞 1-800-DONATE</li>
+              <li className="text-gray-600 text-sm flex items-center gap-2">
+                <Phone className="w-4 h-4" />
+                1-800-DONATE
+              </li>
             </ul>
           </div>
         </div>
