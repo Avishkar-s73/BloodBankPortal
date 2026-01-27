@@ -8,19 +8,19 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
-  Home, 
-  Droplet, 
-  Building2, 
-  Package, 
-  BarChart3, 
+import {
+  Home,
+  Droplet,
+  Building2,
+  Package,
+  BarChart3,
   ClipboardList,
   ChevronDown,
   LogOut,
   X,
   Menu,
   Lock,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 
 export default function Header() {
@@ -35,34 +35,46 @@ export default function Header() {
       await logout();
       router.push("/");
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error("Logout failed", error);
     }
   };
 
   const baseLinks = [{ href: "/", label: "Home", icon: Home }];
 
-  const roleLinks = user?.role === "DONOR"
-    ? [{ href: "/donor-dashboard", label: "Donor Dashboard", icon: Droplet }]
-    : user?.role === "HOSPITAL"
-    ? [
-        { href: "/hospital-dashboard", label: "Hospital Dashboard", icon: Building2 },
-      ]
-    : user?.role === "BLOOD_BANK"
-    ? [
-        { href: "/blood-bank-dashboard", label: "Blood Bank Dashboard", icon: Building2 },
-        { href: "/inventory", label: "Inventory", icon: Package },
-      ]
-    : [
-        { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
-        { href: "/inventory", label: "Inventory", icon: Package },
-        { href: "/requests", label: "Requests", icon: ClipboardList },
-      ];
+  const roleLinks =
+    user?.role === "DONOR"
+      ? [{ href: "/donor-dashboard", label: "Donor Dashboard", icon: Droplet }]
+      : user?.role === "HOSPITAL"
+      ? [
+          {
+            href: "/hospital-dashboard",
+            label: "Hospital Dashboard",
+            icon: Building2,
+          },
+        ]
+      : user?.role === "BLOOD_BANK"
+      ? [
+          {
+            href: "/blood-bank-dashboard",
+            label: "Blood Bank Dashboard",
+            icon: Building2,
+          },
+          { href: "/inventory", label: "Inventory", icon: Package },
+        ]
+      : [
+          { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
+          { href: "/inventory", label: "Inventory", icon: Package },
+          { href: "/requests", label: "Requests", icon: ClipboardList },
+        ];
 
   const navLinks = [
     ...baseLinks,
     ...roleLinks,
     // Show Blood Banks link to everyone except blood bank users (they don't need it in their navbar)
-    ...(user?.role === "BLOOD_BANK" ? [] : [{ href: "/blood-banks", label: "Blood Banks", icon: Building2 }]),
+    ...(user?.role === "BLOOD_BANK"
+      ? []
+      : [{ href: "/blood-banks", label: "Blood Banks", icon: Building2 }]),
   ];
 
   const isActive = (path: string) => pathname === path;
@@ -112,7 +124,7 @@ export default function Header() {
                       <span>{link.label}</span>
                     </Link>
                   ))}
-                  
+
                   {/* User Menu */}
                   <div className="relative ml-2">
                     <button
@@ -122,14 +134,18 @@ export default function Header() {
                       <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold">
                         {user.name.charAt(0).toUpperCase()}
                       </div>
-                      <span className="font-medium">{user.name.split(' ')[0]}</span>
+                      <span className="font-medium">
+                        {user.name.split(" ")[0]}
+                      </span>
                       <ChevronDown className="w-4 h-4" />
                     </button>
-                    
+
                     {showUserMenu && (
                       <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl py-2 z-50">
                         <div className="px-4 py-3 border-b border-gray-200">
-                          <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {user.name}
+                          </p>
                           <p className="text-xs text-gray-500">{user.email}</p>
                           <span className="inline-block mt-1 px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
                             {user.role}
@@ -171,7 +187,11 @@ export default function Header() {
             className="md:hidden bg-white/10 hover:bg-white/20 text-white p-3 rounded-lg transition-colors"
             aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {mobileMenuOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <Menu className="w-5 h-5" />
+            )}
           </button>
         </div>
 
@@ -199,7 +219,7 @@ export default function Header() {
                     <span>{link.label}</span>
                   </Link>
                 ))}
-                
+
                 {/* User Info in Mobile */}
                 <div className="border-t border-white/20 mt-2 pt-2 px-4 py-3">
                   <p className="text-white font-medium text-sm">{user.name}</p>
@@ -208,7 +228,7 @@ export default function Header() {
                     {user.role}
                   </span>
                 </div>
-                
+
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);

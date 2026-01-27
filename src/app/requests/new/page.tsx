@@ -52,8 +52,9 @@ function NewRequestForm() {
 
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [bloodBanks, setBloodBanks] = useState<BloodBank[]>([]);
-  const [inventoryCheck, setInventoryCheck] =
-    useState<InventoryCheck | null>(null);
+  const [inventoryCheck, setInventoryCheck] = useState<InventoryCheck | null>(
+    null
+  );
   const [checkingInventory, setCheckingInventory] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -120,7 +121,11 @@ function NewRequestForm() {
 
   // WORKFLOW ENHANCEMENT: Check inventory availability before submission
   useEffect(() => {
-    if (formData.bloodBankId && formData.bloodGroup && formData.quantityNeeded) {
+    if (
+      formData.bloodBankId &&
+      formData.bloodGroup &&
+      formData.quantityNeeded
+    ) {
       checkInventoryAvailability();
     } else {
       setInventoryCheck(null);
@@ -602,8 +607,8 @@ function NewRequestForm() {
                     bank
                   </p>
                   <p>
-                    2️⃣ If available: Request is FULFILLED immediately + inventory
-                    is reduced
+                    2️⃣ If available: Request is FULFILLED immediately +
+                    inventory is reduced
                   </p>
                   <p>
                     3️⃣ If unavailable: Request is marked PENDING + no inventory

@@ -4,6 +4,7 @@
     "no-console": "warn",
     "semi": ["error", "always"],
     "quotes": ["error", "double", { "avoidEscape": true }],
+    "react-hooks/exhaustive-deps": "warn",
     "prettier/prettier": [
       "error",
       {

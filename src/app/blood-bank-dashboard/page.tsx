@@ -47,8 +47,12 @@ export default function BloodBankDashboard() {
   const [approvedCount, setApprovedCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"requests" | "inventory">("requests");
-  const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"requests" | "inventory">(
+    "requests"
+  );
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     if (user?.role !== "BLOOD_BANK" && user?.role !== "ADMIN") {
@@ -61,7 +65,7 @@ export default function BloodBankDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch incoming blood requests (PENDING_APPROVAL, ESCALATED_TO_DONORS, and legacy PENDING)
       const requestsRes = await fetch("/api/blood-requests");
       if (requestsRes.ok) {
@@ -70,8 +74,11 @@ export default function BloodBankDashboard() {
           ? data.data
           : data.data?.requests || [];
         // Filter for PENDING_APPROVAL, ESCALATED_TO_DONORS, and legacy PENDING requests
-        const pendingRequests = requests.filter((r: BloodRequest) =>
-          r.status === "PENDING_APPROVAL" || r.status === "ESCALATED_TO_DONORS" || r.status === "PENDING"
+        const pendingRequests = requests.filter(
+          (r: BloodRequest) =>
+            r.status === "PENDING_APPROVAL" ||
+            r.status === "ESCALATED_TO_DONORS" ||
+            r.status === "PENDING"
         );
         setIncomingRequests(pendingRequests);
         // Compute approved/fulfilled counts from all requests (not just incoming)
@@ -89,13 +96,18 @@ export default function BloodBankDashboard() {
       }
     } catch (err) {
       setError("Failed to load dashboard data");
+      // eslint-disable-next-line no-console
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApproveRequest = async (requestId: string, bloodGroup: string, quantity: number) => {
+  const handleApproveRequest = async (
+    requestId: string,
+    bloodGroup: string,
+    quantity: number
+  ) => {
     const confirmed = confirm(
       `Approve this request?\n\nBlood Group: ${bloodGroup}\nQuantity: ${quantity} units\n\nIf inventory is sufficient, the request will be fulfilled automatically.\nOtherwise, it will be escalated to donors.`
     );
@@ -129,6 +141,7 @@ export default function BloodBankDashboard() {
       }
     } catch (err) {
       alert("Error approving request");
+      // eslint-disable-next-line no-console
       console.error(err);
     } finally {
       setProcessingRequestId(null);
@@ -138,10 +151,13 @@ export default function BloodBankDashboard() {
   const handleEscalateRequest = async (requestId: string) => {
     try {
       setProcessingRequestId(requestId);
-      const response = await fetch(`/api/blood-requests/${requestId}/escalate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await fetch(
+        `/api/blood-requests/${requestId}/escalate`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -153,6 +169,7 @@ export default function BloodBankDashboard() {
       }
     } catch (err) {
       alert("Error escalating request");
+      // eslint-disable-next-line no-console
       console.error(err);
     } finally {
       setProcessingRequestId(null);
@@ -196,7 +213,9 @@ export default function BloodBankDashboard() {
   };
 
   const getPendingRequests = () => {
-    return incomingRequests.filter(r => r.status === "PENDING" || r.status === "PENDING_APPROVAL").length;
+    return incomingRequests.filter(
+      (r) => r.status === "PENDING" || r.status === "PENDING_APPROVAL"
+    ).length;
   };
 
   const getApprovedRequests = () => {
@@ -238,7 +257,9 @@ export default function BloodBankDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Inventory</p>
-              <p className="text-3xl font-bold text-gray-900">{getTotalInventory()} units</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {getTotalInventory()} units
+              </p>
             </div>
             <div className="text-4xl">🩸</div>
           </div>
@@ -248,7 +269,9 @@ export default function BloodBankDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Pending Requests</p>
-              <p className="text-3xl font-bold text-gray-900">{getPendingRequests()}</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {getPendingRequests()}
+              </p>
             </div>
             <div className="text-4xl">⏳</div>
           </div>
@@ -258,7 +281,9 @@ export default function BloodBankDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Approved</p>
-              <p className="text-3xl font-bold text-gray-900">{getApprovedRequests()}</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {getApprovedRequests()}
+              </p>
             </div>
             <div className="text-4xl">✓</div>
           </div>
@@ -268,7 +293,9 @@ export default function BloodBankDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Blood Groups</p>
-              <p className="text-3xl font-bold text-gray-900">{inventory.length}</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {inventory.length}
+              </p>
             </div>
             <div className="text-4xl">📊</div>
           </div>
@@ -307,7 +334,9 @@ export default function BloodBankDashboard() {
           {incomingRequests.length === 0 ? (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <p className="text-xl text-gray-600">📭 No incoming requests</p>
-              <p className="text-sm text-gray-500 mt-2">All requests have been processed</p>
+              <p className="text-sm text-gray-500 mt-2">
+                All requests have been processed
+              </p>
             </div>
           ) : (
             <div className="grid gap-6">
@@ -322,12 +351,19 @@ export default function BloodBankDashboard() {
                         Blood Group: {request.bloodGroup}
                       </h3>
                       <p className="text-gray-600">
-                        Patient: <span className="font-semibold">{request.patientName}</span>
+                        Patient:{" "}
+                        <span className="font-semibold">
+                          {request.patientName}
+                        </span>
                         {request.patientAge && `, Age: ${request.patientAge}`}
                       </p>
                     </div>
                     <div className="text-right">
-                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold border ${getStatusColor(request.status)}`}>
+                      <span
+                        className={`inline-block px-3 py-1 rounded-full text-sm font-semibold border ${getStatusColor(
+                          request.status
+                        )}`}
+                      >
                         {request.status}
                       </span>
                     </div>
@@ -336,7 +372,8 @@ export default function BloodBankDashboard() {
                   <div className="grid md:grid-cols-2 gap-4 mb-4">
                     <div>
                       <p className="text-sm text-gray-600">
-                        <span className="font-semibold">Quantity:</span> {request.quantityNeeded} units
+                        <span className="font-semibold">Quantity:</span>{" "}
+                        {request.quantityNeeded} units
                       </p>
                       <p className="text-sm text-gray-600">
                         <span className="font-semibold">Urgency:</span>{" "}
@@ -352,14 +389,17 @@ export default function BloodBankDashboard() {
                     <div>
                       <p className="text-sm text-gray-600">
                         <span className="font-semibold">Requester:</span>{" "}
-                        {request.requester.firstName} {request.requester.lastName}
+                        {request.requester.firstName}{" "}
+                        {request.requester.lastName}
                       </p>
                       <p className="text-sm text-gray-600">
-                        <span className="font-semibold">Email:</span> {request.requester.email}
+                        <span className="font-semibold">Email:</span>{" "}
+                        {request.requester.email}
                       </p>
                       {request.hospital && (
                         <p className="text-sm text-gray-600">
-                          <span className="font-semibold">Hospital:</span> {request.hospital.name}, {request.hospital.city}
+                          <span className="font-semibold">Hospital:</span>{" "}
+                          {request.hospital.name}, {request.hospital.city}
                         </p>
                       )}
                     </div>
@@ -368,27 +408,39 @@ export default function BloodBankDashboard() {
                   {request.purpose && (
                     <div className="mb-4 p-3 bg-gray-50 rounded-lg">
                       <p className="text-sm text-gray-700">
-                        <span className="font-semibold">Purpose:</span> {request.purpose}
+                        <span className="font-semibold">Purpose:</span>{" "}
+                        {request.purpose}
                       </p>
                     </div>
                   )}
 
                   <div className="flex gap-3">
-                    {(request.status === "PENDING_APPROVAL" || request.status === "PENDING") && (
+                    {(request.status === "PENDING_APPROVAL" ||
+                      request.status === "PENDING") && (
                       <>
                         <button
-                          onClick={() => handleApproveRequest(request.id, request.bloodGroup, request.quantityNeeded)}
+                          onClick={() =>
+                            handleApproveRequest(
+                              request.id,
+                              request.bloodGroup,
+                              request.quantityNeeded
+                            )
+                          }
                           disabled={processingRequestId === request.id}
                           className="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {processingRequestId === request.id ? "Processing..." : "✓ Approve & Fulfill"}
+                          {processingRequestId === request.id
+                            ? "Processing..."
+                            : "✓ Approve & Fulfill"}
                         </button>
                         <button
                           onClick={() => handleEscalateRequest(request.id)}
                           disabled={processingRequestId === request.id}
                           className="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {processingRequestId === request.id ? "Processing..." : "⚠️ Escalate to Donors"}
+                          {processingRequestId === request.id
+                            ? "Processing..."
+                            : "⚠️ Escalate to Donors"}
                         </button>
                       </>
                     )}
@@ -410,7 +462,9 @@ export default function BloodBankDashboard() {
           {inventory.length === 0 ? (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
               <p className="text-xl text-gray-600">📦 No inventory data</p>
-              <p className="text-sm text-gray-500 mt-2">Add blood units to get started</p>
+              <p className="text-sm text-gray-500 mt-2">
+                Add blood units to get started
+              </p>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -436,14 +490,15 @@ export default function BloodBankDashboard() {
               ))}
             </div>
           )}
-          
+
           <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-blue-900 mb-2">
               💡 Inventory Management
             </h3>
             <p className="text-sm text-blue-800">
-              When you fulfill a blood request, the inventory is automatically updated.
-              The system will deduct the fulfilled quantity from your available stock.
+              When you fulfill a blood request, the inventory is automatically
+              updated. The system will deduct the fulfilled quantity from your
+              available stock.
             </p>
           </div>
         </div>

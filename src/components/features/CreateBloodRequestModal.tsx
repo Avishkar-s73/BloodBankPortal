@@ -47,7 +47,9 @@ export default function CreateBloodRequestModal({
 
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [bloodBanks, setBloodBanks] = useState<BloodBank[]>([]);
-  const [inventoryCheck, setInventoryCheck] = useState<InventoryCheck | null>(null);
+  const [inventoryCheck, setInventoryCheck] = useState<InventoryCheck | null>(
+    null
+  );
   const [checkingInventory, setCheckingInventory] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -134,7 +136,11 @@ export default function CreateBloodRequestModal({
 
   // Check inventory availability
   useEffect(() => {
-    if (formData.bloodBankId && formData.bloodGroup && formData.quantityNeeded) {
+    if (
+      formData.bloodBankId &&
+      formData.bloodGroup &&
+      formData.quantityNeeded
+    ) {
       checkInventoryAvailability();
     } else {
       setInventoryCheck(null);
@@ -169,7 +175,8 @@ export default function CreateBloodRequestModal({
         setInventoryCheck({
           availableUnits: 0,
           canFulfill: false,
-          message: "⚠️ No inventory available. Request will be marked as PENDING.",
+          message:
+            "⚠️ No inventory available. Request will be marked as PENDING.",
         });
       }
     } catch (err) {
@@ -216,7 +223,9 @@ export default function CreateBloodRequestModal({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error?.message || data.error || "Failed to create request");
+        throw new Error(
+          data.error?.message || data.error || "Failed to create request"
+        );
       }
 
       setSuccess(true);
@@ -232,7 +241,9 @@ export default function CreateBloodRequestModal({
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     setFormData({
       ...formData,
@@ -245,12 +256,12 @@ export default function CreateBloodRequestModal({
   // Lock body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [isOpen]);
 
@@ -292,7 +303,9 @@ export default function CreateBloodRequestModal({
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Patient Information */}
             <div className="border-b border-gray-200 pb-3">
-              <h3 className="text-base font-semibold text-gray-900 mb-2">Patient Information</h3>
+              <h3 className="text-base font-semibold text-gray-900 mb-2">
+                Patient Information
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -362,7 +375,9 @@ export default function CreateBloodRequestModal({
 
             {/* Blood Request Details */}
             <div className="border-b border-gray-200 pb-3">
-              <h3 className="text-base font-semibold text-gray-900 mb-2">Blood Details</h3>
+              <h3 className="text-base font-semibold text-gray-900 mb-2">
+                Blood Details
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -437,7 +452,9 @@ export default function CreateBloodRequestModal({
 
             {/* Blood Bank & Hospital */}
             <div className="border-b border-gray-200 pb-3">
-              <h3 className="text-base font-semibold text-gray-900 mb-2">Blood Bank & Hospital</h3>
+              <h3 className="text-base font-semibold text-gray-900 mb-2">
+                Blood Bank & Hospital
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="md:col-span-1">
                   <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -497,7 +514,9 @@ export default function CreateBloodRequestModal({
                     >
                       <p
                         className={`text-xs font-medium ${
-                          inventoryCheck.canFulfill ? "text-green-800" : "text-yellow-800"
+                          inventoryCheck.canFulfill
+                            ? "text-green-800"
+                            : "text-yellow-800"
                         }`}
                       >
                         {inventoryCheck.message}
@@ -510,7 +529,9 @@ export default function CreateBloodRequestModal({
 
             {/* Medical Details */}
             <div>
-              <h3 className="text-base font-semibold text-gray-900 mb-2">Medical Details (Optional)</h3>
+              <h3 className="text-base font-semibold text-gray-900 mb-2">
+                Medical Details (Optional)
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
