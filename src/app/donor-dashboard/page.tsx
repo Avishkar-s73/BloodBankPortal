@@ -78,14 +78,20 @@ interface DonorStats {
 
 export default function DonorDashboard() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"requests" | "history" | "stats">("requests");
+  const [activeTab, setActiveTab] = useState<"requests" | "history" | "stats">(
+    "requests"
+  );
   const [activeRequests, setActiveRequests] = useState<BloodRequest[]>([]);
-  const [scheduledDonations, setScheduledDonations] = useState<DonationIntent[]>([]);
+  const [scheduledDonations, setScheduledDonations] = useState<
+    DonationIntent[]
+  >([]);
   const [donationHistory, setDonationHistory] = useState<DonationHistory[]>([]);
   const [donorStats, setDonorStats] = useState<DonorStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedRequest, setSelectedRequest] = useState<BloodRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<BloodRequest | null>(
+    null
+  );
   const [showDonationModal, setShowDonationModal] = useState(false);
 
   useEffect(() => {
@@ -177,19 +183,21 @@ export default function DonorDashboard() {
 
       if (response.ok) {
         const data = await response.json();
-        
+
         // Show detailed success message with contact info
-        alert(`✅ ${data.message}\n\n` +
-          `📍 Blood Bank: ${selectedRequest.bloodBank.name}\n` +
-          `📞 Contact: ${selectedRequest.bloodBank.phone}\n` +
-          `📧 Address: ${selectedRequest.bloodBank.address}, ${selectedRequest.bloodBank.city}\n\n` +
-          `⏰ Next Steps:\n` +
-          `1. The blood bank will contact you within 24 hours\n` +
-          `2. They will schedule your donation appointment\n` +
-          `3. Please arrive 15 minutes early\n` +
-          `4. Bring a valid ID and eat well before donation\n\n` +
-          `💡 You can also call them directly at the number above to schedule!`);
-        
+        alert(
+          `✅ ${data.message}\n\n` +
+            `📍 Blood Bank: ${selectedRequest.bloodBank.name}\n` +
+            `📞 Contact: ${selectedRequest.bloodBank.phone}\n` +
+            `📧 Address: ${selectedRequest.bloodBank.address}, ${selectedRequest.bloodBank.city}\n\n` +
+            "⏰ Next Steps:\n" +
+            "1. The blood bank will contact you within 24 hours\n" +
+            "2. They will schedule your donation appointment\n" +
+            "3. Please arrive 15 minutes early\n" +
+            "4. Bring a valid ID and eat well before donation\n\n" +
+            "💡 You can also call them directly at the number above to schedule!"
+        );
+
         setShowDonationModal(false);
         fetchScheduledDonations();
         fetchActiveRequests();
@@ -216,11 +224,16 @@ export default function DonorDashboard() {
   };
 
   const getBadge = (totalDonations: number) => {
-    if (totalDonations >= 50) return { icon: "🏆", name: "Legend", color: "text-yellow-600" };
-    if (totalDonations >= 25) return { icon: "💎", name: "Hero", color: "text-blue-600" };
-    if (totalDonations >= 10) return { icon: "⭐", name: "Champion", color: "text-purple-600" };
-    if (totalDonations >= 5) return { icon: "🎖️", name: "Warrior", color: "text-green-600" };
-    if (totalDonations >= 1) return { icon: "🩸", name: "Lifesaver", color: "text-red-600" };
+    if (totalDonations >= 50)
+      return { icon: "🏆", name: "Legend", color: "text-yellow-600" };
+    if (totalDonations >= 25)
+      return { icon: "💎", name: "Hero", color: "text-blue-600" };
+    if (totalDonations >= 10)
+      return { icon: "⭐", name: "Champion", color: "text-purple-600" };
+    if (totalDonations >= 5)
+      return { icon: "🎖️", name: "Warrior", color: "text-green-600" };
+    if (totalDonations >= 1)
+      return { icon: "🩸", name: "Lifesaver", color: "text-red-600" };
     return { icon: "🌱", name: "Beginner", color: "text-gray-600" };
   };
 
@@ -247,13 +260,19 @@ export default function DonorDashboard() {
               🩸 Donor Dashboard
             </h1>
             <p className="text-lg text-gray-600">
-              Welcome back, <span className="font-semibold text-red-600">{user?.name.split(' ')[0]}</span>!
+              Welcome back,{" "}
+              <span className="font-semibold text-red-600">
+                {user?.name.split(" ")[0]}
+              </span>
+              !
             </p>
           </div>
           {badge && (
             <div className="text-center">
               <div className="text-5xl mb-2">{badge.icon}</div>
-              <div className={`text-sm font-bold ${badge.color}`}>{badge.name}</div>
+              <div className={`text-sm font-bold ${badge.color}`}>
+                {badge.name}
+              </div>
             </div>
           )}
         </div>
@@ -277,9 +296,19 @@ export default function DonorDashboard() {
             </div>
           </div>
 
-          <div className={`bg-gradient-to-br ${donorStats?.isEligible ? 'from-green-50' : 'from-yellow-50'} to-white p-4 rounded-xl shadow-md border-l-4 ${donorStats?.isEligible ? 'border-green-500' : 'border-yellow-500'}`}>
+          <div
+            className={`bg-gradient-to-br ${
+              donorStats?.isEligible ? "from-green-50" : "from-yellow-50"
+            } to-white p-4 rounded-xl shadow-md border-l-4 ${
+              donorStats?.isEligible ? "border-green-500" : "border-yellow-500"
+            }`}
+          >
             <div className="text-xs text-gray-600 mb-1">Eligibility</div>
-            <div className={`text-lg font-bold ${donorStats?.isEligible ? 'text-green-600' : 'text-yellow-600'}`}>
+            <div
+              className={`text-lg font-bold ${
+                donorStats?.isEligible ? "text-green-600" : "text-yellow-600"
+              }`}
+            >
               {donorStats?.isEligible ? "✅ Eligible" : "⏳ Not Yet"}
             </div>
             {donorStats?.nextEligibleDate && !donorStats.isEligible && (
@@ -305,12 +334,17 @@ export default function DonorDashboard() {
               <div className="text-2xl">⏰</div>
               <div>
                 <p className="font-semibold text-yellow-900 mb-1">
-                  You're not eligible to donate yet
+                  You{"'"}re not eligible to donate yet
                 </p>
                 <p className="text-sm text-yellow-800">
                   You can donate again on{" "}
-                  <strong>{donorStats.nextEligibleDate && new Date(donorStats.nextEligibleDate).toLocaleDateString()}</strong>.
-                  Donors must wait 90 days between donations for safety.
+                  <strong>
+                    {donorStats.nextEligibleDate &&
+                      new Date(
+                        donorStats.nextEligibleDate
+                      ).toLocaleDateString()}
+                  </strong>
+                  . Donors must wait 90 days between donations for safety.
                 </p>
               </div>
             </div>
@@ -382,8 +416,12 @@ export default function DonorDashboard() {
                     <p className="font-semibold text-gray-900">
                       {donation.bloodBank.name}
                     </p>
-                    <p className="text-sm text-gray-600">{donation.bloodBank.address}</p>
-                    <p className="text-sm text-gray-600">📞 {donation.bloodBank.phone}</p>
+                    <p className="text-sm text-gray-600">
+                      {donation.bloodBank.address}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      📞 {donation.bloodBank.phone}
+                    </p>
                     {donation.bloodBank.operatingHours && (
                       <p className="text-sm text-gray-600">
                         🕐 {donation.bloodBank.operatingHours}
@@ -422,7 +460,8 @@ export default function DonorDashboard() {
                 No Active Requests
               </h3>
               <p className="text-gray-600">
-                There are currently no pending blood requests matching your blood group in your area.
+                There are currently no pending blood requests matching your
+                blood group in your area.
               </p>
             </div>
           ) : (
@@ -433,13 +472,18 @@ export default function DonorDashboard() {
                   className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow"
                 >
                   {/* Urgency Banner */}
-                  <div className={`px-4 py-2 ${getUrgencyColor(request.urgency)} border-b`}>
+                  <div
+                    className={`px-4 py-2 ${getUrgencyColor(
+                      request.urgency
+                    )} border-b`}
+                  >
                     <div className="flex justify-between items-center">
                       <span className="font-semibold text-sm">
                         🚨 {request.urgency} URGENCY
                       </span>
                       <span className="text-xs">
-                        Needed by: {new Date(request.requiredBy).toLocaleDateString()}
+                        Needed by:{" "}
+                        {new Date(request.requiredBy).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
@@ -451,8 +495,12 @@ export default function DonorDashboard() {
                         Patient: {request.patientName}
                       </h3>
                       <div className="flex gap-4 text-sm text-gray-600">
-                        {request.patientAge && <span>Age: {request.patientAge}</span>}
-                        {request.patientGender && <span>Gender: {request.patientGender}</span>}
+                        {request.patientAge && (
+                          <span>Age: {request.patientAge}</span>
+                        )}
+                        {request.patientGender && (
+                          <span>Gender: {request.patientGender}</span>
+                        )}
                       </div>
                     </div>
 
@@ -471,7 +519,9 @@ export default function DonorDashboard() {
 
                     {/* Purpose */}
                     <div className="mb-4">
-                      <p className="text-sm font-semibold text-gray-700">Purpose:</p>
+                      <p className="text-sm font-semibold text-gray-700">
+                        Purpose:
+                      </p>
                       <p className="text-gray-900">{request.purpose}</p>
                     </div>
 
@@ -480,11 +530,15 @@ export default function DonorDashboard() {
                       <p className="font-semibold text-gray-900 mb-1">
                         🏥 {request.bloodBank.name}
                       </p>
-                      <p className="text-sm text-gray-600">{request.bloodBank.address}</p>
+                      <p className="text-sm text-gray-600">
+                        {request.bloodBank.address}
+                      </p>
                       <p className="text-sm text-gray-600">
                         📍 {request.bloodBank.city}, {request.bloodBank.state}
                       </p>
-                      <p className="text-sm text-gray-600">📞 {request.bloodBank.phone}</p>
+                      <p className="text-sm text-gray-600">
+                        📞 {request.bloodBank.phone}
+                      </p>
                     </div>
 
                     {/* Action Button */}
@@ -497,7 +551,9 @@ export default function DonorDashboard() {
                           : "bg-gray-300 text-gray-500 cursor-not-allowed"
                       }`}
                     >
-                      {donorStats?.isEligible ? "🩸 I Want to Donate" : "⏳ Not Eligible Yet"}
+                      {donorStats?.isEligible
+                        ? "🩸 I Want to Donate"
+                        : "⏳ Not Eligible Yet"}
                     </button>
                   </div>
                 </div>
@@ -509,7 +565,9 @@ export default function DonorDashboard() {
 
       {activeTab === "history" && (
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">📜 Donation History</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            📜 Donation History
+          </h2>
 
           {donationHistory.length === 0 ? (
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-12 text-center">
@@ -518,7 +576,8 @@ export default function DonorDashboard() {
                 No Donations Yet
               </h3>
               <p className="text-gray-600 mb-6">
-                Start your lifesaving journey by responding to blood requests above!
+                Start your lifesaving journey by responding to blood requests
+                above!
               </p>
               <button
                 onClick={() => setActiveTab("requests")}
@@ -537,16 +596,25 @@ export default function DonorDashboard() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="text-3xl">
-                        {index === 0 ? "🏆" : index === 1 ? "🥈" : index === 2 ? "🥉" : "🩸"}
+                        {index === 0
+                          ? "🏆"
+                          : index === 1
+                          ? "🥈"
+                          : index === 2
+                          ? "🥉"
+                          : "🩸"}
                       </div>
                       <div>
                         <p className="font-semibold text-lg text-gray-900">
                           Donation #{donationHistory.length - index}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {new Date(donation.donationDate).toLocaleDateString()} at {donation.bloodBank.name}
+                          {new Date(donation.donationDate).toLocaleDateString()}{" "}
+                          at {donation.bloodBank.name}
                         </p>
-                        <p className="text-xs text-gray-500">{donation.bloodBank.city}</p>
+                        <p className="text-xs text-gray-500">
+                          {donation.bloodBank.city}
+                        </p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -554,7 +622,8 @@ export default function DonorDashboard() {
                         {donation.bloodGroup.replace("_", " ")}
                       </div>
                       <p className="text-sm text-gray-600 mt-2">
-                        {donation.quantity} {donation.quantity === 1 ? "unit" : "units"}
+                        {donation.quantity}{" "}
+                        {donation.quantity === 1 ? "unit" : "units"}
                       </p>
                     </div>
                   </div>
@@ -567,7 +636,9 @@ export default function DonorDashboard() {
 
       {activeTab === "stats" && (
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">📊 Your Impact</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            📊 Your Impact
+          </h2>
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             {/* Lives Saved Card */}
@@ -576,9 +647,7 @@ export default function DonorDashboard() {
               <h3 className="text-3xl font-bold mb-2">
                 {(donorStats?.totalDonations || 0) * 3}
               </h3>
-              <p className="text-red-100 text-lg">
-                Potential lives saved
-              </p>
+              <p className="text-red-100 text-lg">Potential lives saved</p>
               <p className="text-red-200 text-sm mt-2">
                 Each donation can save up to 3 lives!
               </p>
@@ -590,18 +659,18 @@ export default function DonorDashboard() {
               <h3 className="text-3xl font-bold mb-2">
                 {donorStats?.lifetimeUnits || 0} Units
               </h3>
-              <p className="text-blue-100 text-lg">
-                Total blood donated
-              </p>
+              <p className="text-blue-100 text-lg">Total blood donated</p>
               <p className="text-blue-200 text-sm mt-2">
-                That's {((donorStats?.lifetimeUnits || 0) * 450)} ml of life!
+                That{"'"}s {(donorStats?.lifetimeUnits || 0) * 450} ml of life!
               </p>
             </div>
           </div>
 
           {/* Achievement Badges */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-6">🏆 Your Badges</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-6">
+              🏆 Your Badges
+            </h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
               {[
                 { count: 1, icon: "🩸", name: "Lifesaver", color: "red" },
@@ -610,7 +679,8 @@ export default function DonorDashboard() {
                 { count: 25, icon: "💎", name: "Hero", color: "blue" },
                 { count: 50, icon: "🏆", name: "Legend", color: "yellow" },
               ].map((badge) => {
-                const unlocked = (donorStats?.totalDonations || 0) >= badge.count;
+                const unlocked =
+                  (donorStats?.totalDonations || 0) >= badge.count;
                 return (
                   <div
                     key={badge.name}
@@ -620,14 +690,23 @@ export default function DonorDashboard() {
                         : "bg-gray-50 border-gray-200 opacity-50"
                     }`}
                   >
-                    <div className={`text-4xl mb-2 ${unlocked ? "animate-bounce" : "grayscale"}`}>
+                    <div
+                      className={`text-4xl mb-2 ${
+                        unlocked ? "animate-bounce" : "grayscale"
+                      }`}
+                    >
                       {badge.icon}
                     </div>
-                    <p className={`text-xs font-bold ${unlocked ? `text-${badge.color}-600` : "text-gray-500"}`}>
+                    <p
+                      className={`text-xs font-bold ${
+                        unlocked ? `text-${badge.color}-600` : "text-gray-500"
+                      }`}
+                    >
                       {badge.name}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      {badge.count} {badge.count === 1 ? "donation" : "donations"}
+                      {badge.count}{" "}
+                      {badge.count === 1 ? "donation" : "donations"}
                     </p>
                   </div>
                 );
@@ -637,7 +716,9 @@ export default function DonorDashboard() {
 
           {/* Eligibility Info */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">📅 Donation Eligibility</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              📅 Donation Eligibility
+            </h3>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <div className="text-2xl">
@@ -645,7 +726,9 @@ export default function DonorDashboard() {
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">
-                    {donorStats?.isEligible ? "You're eligible to donate!" : "Not eligible yet"}
+                    {donorStats?.isEligible
+                      ? "You're eligible to donate!"
+                      : "Not eligible yet"}
                   </p>
                   <p className="text-sm text-gray-600">
                     {donorStats?.daysSinceLastDonation !== null
@@ -654,19 +737,28 @@ export default function DonorDashboard() {
                   </p>
                   {donorStats?.nextEligibleDate && !donorStats.isEligible && (
                     <p className="text-sm text-gray-600 mt-1">
-                      You can donate again on: <strong>{new Date(donorStats.nextEligibleDate).toLocaleDateString()}</strong>
+                      You can donate again on:{" "}
+                      <strong>
+                        {new Date(
+                          donorStats.nextEligibleDate
+                        ).toLocaleDateString()}
+                      </strong>
                     </p>
                   )}
                 </div>
               </div>
 
               <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                <p className="text-sm text-blue-900 font-semibold mb-2">💡 Did you know?</p>
+                <p className="text-sm text-blue-900 font-semibold mb-2">
+                  💡 Did you know?
+                </p>
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• You must wait 90 days (3 months) between donations</li>
                   <li>• Men can donate up to 4 times per year</li>
                   <li>• Women can donate up to 3 times per year</li>
-                  <li>• Your body replenishes donated blood within 24-48 hours</li>
+                  <li>
+                    • Your body replenishes donated blood within 24-48 hours
+                  </li>
                 </ul>
               </div>
             </div>
@@ -681,31 +773,45 @@ export default function DonorDashboard() {
             <h3 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
               🩸 Confirm Donation Intent
             </h3>
-            
+
             <div className="mb-6 space-y-4">
               {/* Patient Details */}
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm font-semibold text-red-900 mb-2">Patient Information</p>
+                <p className="text-sm font-semibold text-red-900 mb-2">
+                  Patient Information
+                </p>
                 <p className="text-gray-700">
                   <strong>Name:</strong> {selectedRequest.patientName}
                 </p>
                 <p className="text-gray-700">
-                  <strong>Blood Group Needed:</strong> {selectedRequest.bloodGroup.replace("_", " ")}
+                  <strong>Blood Group Needed:</strong>{" "}
+                  {selectedRequest.bloodGroup.replace("_", " ")}
                 </p>
                 <p className="text-gray-700">
-                  <strong>Units Required:</strong> {selectedRequest.quantityNeeded}
+                  <strong>Units Required:</strong>{" "}
+                  {selectedRequest.quantityNeeded}
                 </p>
                 <p className="text-gray-700">
-                  <strong>Urgency:</strong> <span className={`font-bold ${
-                    selectedRequest.urgency === "CRITICAL" ? "text-red-600" :
-                    selectedRequest.urgency === "HIGH" ? "text-orange-600" : "text-green-600"
-                  }`}>{selectedRequest.urgency}</span>
+                  <strong>Urgency:</strong>{" "}
+                  <span
+                    className={`font-bold ${
+                      selectedRequest.urgency === "CRITICAL"
+                        ? "text-red-600"
+                        : selectedRequest.urgency === "HIGH"
+                        ? "text-orange-600"
+                        : "text-green-600"
+                    }`}
+                  >
+                    {selectedRequest.urgency}
+                  </span>
                 </p>
               </div>
 
               {/* Blood Bank Contact Info */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm font-semibold text-blue-900 mb-2">📍 Blood Bank Details</p>
+                <p className="text-sm font-semibold text-blue-900 mb-2">
+                  📍 Blood Bank Details
+                </p>
                 <p className="text-gray-800 font-semibold">
                   {selectedRequest.bloodBank.name}
                 </p>
@@ -713,10 +819,15 @@ export default function DonorDashboard() {
                   📍 {selectedRequest.bloodBank.address}
                 </p>
                 <p className="text-gray-700 text-sm">
-                  {selectedRequest.bloodBank.city}, {selectedRequest.bloodBank.state}
+                  {selectedRequest.bloodBank.city},{" "}
+                  {selectedRequest.bloodBank.state}
                 </p>
                 <p className="text-gray-800 font-semibold mt-2 flex items-center gap-2">
-                  📞 <a href={`tel:${selectedRequest.bloodBank.phone}`} className="text-blue-600 hover:underline">
+                  📞{" "}
+                  <a
+                    href={`tel:${selectedRequest.bloodBank.phone}`}
+                    className="text-blue-600 hover:underline"
+                  >
                     {selectedRequest.bloodBank.phone}
                   </a>
                 </p>
@@ -724,18 +835,22 @@ export default function DonorDashboard() {
 
               {/* Next Steps */}
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-sm font-semibold text-green-900 mb-2">✅ What Happens Next?</p>
+                <p className="text-sm font-semibold text-green-900 mb-2">
+                  ✅ What Happens Next?
+                </p>
                 <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
                   <li>Your donation intent will be recorded</li>
                   <li>Blood bank will contact you within 24 hours</li>
-                  <li>They'll schedule your donation appointment</li>
+                  <li>They{"'"}ll schedule your donation appointment</li>
                   <li>You can also call them directly at the number above</li>
                 </ol>
               </div>
 
               {/* Important Information */}
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-sm font-semibold text-yellow-900 mb-2">⚠️ Before You Donate</p>
+                <p className="text-sm font-semibold text-yellow-900 mb-2">
+                  ⚠️ Before You Donate
+                </p>
                 <ul className="text-sm text-gray-700 space-y-1">
                   <li>• Bring a valid government ID</li>
                   <li>• Eat a healthy meal 2-3 hours before</li>
