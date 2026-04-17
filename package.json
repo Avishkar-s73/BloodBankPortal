@@ -6,6 +6,7 @@
     "dev": "next dev",
     "prepare": "husky install",
     "build": "next build",
+    "postinstall": "prisma generate",
     "build:dev": "cross-env NODE_ENV=development NEXT_PUBLIC_API_URL=http://localhost:3000/api next build",
     "build:staging": "cross-env NODE_ENV=production NEXT_PUBLIC_API_URL=https://staging.example.com/api next build",
     "build:prod": "cross-env NODE_ENV=production NEXT_PUBLIC_API_URL=https://api.example.com next build",
