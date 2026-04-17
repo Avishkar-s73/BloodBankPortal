@@ -57,7 +57,7 @@ export async function POST(
     }
 
     // Validate request status
-    if (bloodRequest.status !== RequestStatus.PENDING_APPROVAL) {
+    if (bloodRequest.status !== RequestStatus.PENDING_APPROVAL && bloodRequest.status !== "PENDING" as RequestStatus) {
       return NextResponse.json(
         {
           success: false,

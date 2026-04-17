@@ -58,7 +58,11 @@ export async function POST(
     }
 
     // Validate request status
-    if (bloodRequest.status !== RequestStatus.PENDING_APPROVAL) {
+    if (
+      bloodRequest.status !== RequestStatus.PENDING_APPROVAL &&
+      bloodRequest.status !== RequestStatus.ESCALATED_TO_DONORS &&
+      bloodRequest.status !== "PENDING" as RequestStatus
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -138,6 +142,43 @@ export async function POST(
             },
           },
         },
+      });
+
+      // Step 5: Mark associated DonationIntents and scheduled Donations as COMPLETED
+      const intents = await tx.donationIntent.findMany({
+        where: { requestId: requestId }
+      });
+
+      if (intents.length > 0) {
+        // Mark intents as completed
+        await tx.donationIntent.updateMany({
+          where: { requestId: requestId },
+          data: { status: "COMPLETED" }
+        });
+
+        // Also mark the SCHEDULED donations for these donors at this bank as COMPLETED
+        const donorIds = intents.map(i => i.donorId);
+        await tx.donation.updateMany({
+          where: {
+            donorId: { in: donorIds },
+            bloodBankId: bloodRequest.bloodBankId!,
+            status: "SCHEDULED"
+          },
+          data: {
+            status: "COMPLETED"
+          }
+        });
+      }
+
+      // Step 6: Notify the requester
+      await tx.notification.create({
+        data: {
+          userId: bloodRequest.requesterId,
+          title: "Blood Request Approved",
+          message: `Your request for ${bloodRequest.quantityNeeded} units of ${bloodRequest.bloodGroup} has been approved and fulfilled!`,
+          type: "REQUEST_APPROVED",
+          link: "/requests",
+        }
       });
 
       return {

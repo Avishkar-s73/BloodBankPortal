@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     let userRole: string | null = null;
     let bloodBankId: string | null = null;
     let hospitalId: string | null = null;
-    
+
     const cookieToken = request.cookies.get("auth-token")?.value;
     const headerToken = request.headers
       .get("authorization")
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
         userId = payload.userId as string;
         userRole = payload.role as string;
         console.log(`[BLOOD REQUEST API] User: ${userId}, Role: ${userRole}`);
-        
+
         // If user is a blood bank, get their blood bank ID
         if (userRole === "BLOOD_BANK") {
           const bloodBank = await prisma.bloodBank.findFirst({
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status;
     if (urgency) where.urgency = urgency;
     if (bloodGroup) where.bloodGroup = bloodGroup;
-    
+
     // Filter by requester or hospital if 'my=true' parameter
     if (myRequests && userId) {
       if (userRole === "HOSPITAL") {
@@ -106,13 +106,13 @@ export async function GET(request: NextRequest) {
         where.requesterId = userId;
       }
     }
-    
+
     // Filter by blood bank if user is a blood bank
     if (userRole === "BLOOD_BANK" && bloodBankId && !myRequests) {
       where.bloodBankId = bloodBankId;
       console.log(`[BLOOD REQUEST API] Filtering by bloodBankId: ${bloodBankId}`);
     }
-    
+
     console.log(`[BLOOD REQUEST API] Final where clause:`, JSON.stringify(where));
 
     // Execute parallel queries for data and count (performance optimization)
@@ -159,6 +159,17 @@ export async function GET(request: NextRequest) {
               name: true,
               city: true,
             },
+          },
+          donationIntents: {
+            include: {
+              donor: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  phone: true,
+                }
+              }
+            }
           },
         },
         // Sort by newest first
@@ -403,7 +414,7 @@ export async function POST(request: NextRequest) {
 
       console.log(
         `[BLOOD REQUEST] Creating PENDING request for ${body.bloodGroup}. ` +
-          `Available inventory: ${inventory?.quantity || 0}, Needed: ${body.quantityNeeded}`
+        `Available inventory: ${inventory?.quantity || 0}, Needed: ${body.quantityNeeded}`
       );
 
       // Step 3: Create blood request record
@@ -455,6 +466,44 @@ export async function POST(request: NextRequest) {
           },
         },
       });
+
+      // Step 4: Create notifications
+      // Notify the blood bank manager (unless they are the ones making the request)
+      const bb = await tx.bloodBank.findUnique({ where: { id: body.bloodBankId } });
+      if (bb?.managerId && bb.managerId !== body.requesterId) {
+        await tx.notification.create({
+          data: {
+            userId: bb.managerId,
+            title: "New Blood Request",
+            message: `A new request for ${body.quantityNeeded} units of ${body.bloodGroup} has been received.`,
+            type: "REQUEST_CREATED",
+            link: "/blood-bank-dashboard",
+          }
+        });
+      }
+
+      // Notify matching donors (limit to 50 for performance, exclude requester)
+      const matchingDonors = await tx.user.findMany({
+        where: {
+          role: "DONOR",
+          bloodGroup: body.bloodGroup,
+          isActive: true,
+          id: { not: body.requesterId }
+        },
+        select: { id: true },
+        take: 50
+      });
+      if (matchingDonors.length > 0) {
+        await tx.notification.createMany({
+          data: matchingDonors.map(d => ({
+            userId: d.id,
+            title: "Blood Match Needed",
+            message: `New request for ${body.bloodGroup}. Your donation could save a life!`,
+            type: "BLOOD_MATCH",
+            link: "/donor-dashboard",
+          }))
+        });
+      }
 
       return { bloodRequest, statusMessage, requestStatus };
     });

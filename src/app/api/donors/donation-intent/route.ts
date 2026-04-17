@@ -110,10 +110,23 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      if (!bloodRequest || bloodRequest.status !== "PENDING") {
+      const validStatuses = ["PENDING", "PENDING_APPROVAL", "ESCALATED_TO_DONORS"];
+      if (!bloodRequest || !validStatuses.includes(bloodRequest.status)) {
         return NextResponse.json(
           { success: false, error: "Blood request not found or already fulfilled" },
           { status: 404 }
+        );
+      }
+
+      // Check if donor already has an intent for this specific request
+      const existingIntent = await prisma.donationIntent.findFirst({
+        where: { donorId: userId, requestId: bloodRequest.id }
+      });
+
+      if (existingIntent) {
+        return NextResponse.json(
+          { success: false, error: "You have already scheduled a donation for this request." },
+          { status: 400 }
         );
       }
     }
@@ -147,6 +160,18 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // If there is a linked blood request, ensure we record the explicit intent to link it
+    if (bloodRequest) {
+      await prisma.donationIntent.create({
+        data: {
+          donorId: userId,
+          requestId: bloodRequest.id,
+          bloodBankId: bloodBankId,
+          status: "DONATION_CONFIRMED"
+        }
+      });
+    }
+
     return NextResponse.json({
       success: true,
       message: "Donation scheduled successfully! Thank you for your willingness to save lives.",
@@ -160,10 +185,10 @@ export async function POST(request: NextRequest) {
         },
         relatedRequest: bloodRequest
           ? {
-              id: bloodRequest.id,
-              patientName: bloodRequest.patientName,
-              bloodGroup: bloodRequest.bloodGroup,
-            }
+            id: bloodRequest.id,
+            patientName: bloodRequest.patientName,
+            bloodGroup: bloodRequest.bloodGroup,
+          }
           : null,
       },
     });
@@ -193,9 +218,7 @@ export async function GET(request: NextRequest) {
     const donations = await prisma.donation.findMany({
       where: {
         donorId: userId,
-        status: {
-          in: ["SCHEDULED", "COMPLETED"],
-        },
+        status: "SCHEDULED",
       },
       include: {
         bloodBank: {

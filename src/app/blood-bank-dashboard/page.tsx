@@ -30,6 +30,13 @@ interface BloodRequest {
     city: string;
     phone: string;
   };
+  donationIntents?: {
+    donor: {
+      firstName: string;
+      lastName: string;
+      phone: string;
+    };
+  }[];
 }
 
 interface InventoryItem {
@@ -109,7 +116,7 @@ export default function BloodBankDashboard() {
     quantity: number
   ) => {
     const confirmed = confirm(
-      `Approve this request?\n\nBlood Group: ${bloodGroup}\nQuantity: ${quantity} units\n\nIf inventory is sufficient, the request will be fulfilled automatically.\nOtherwise, it will be escalated to donors.`
+      `Approve this request?\n\nBlood Group: ${bloodGroup}\nQuantity: ${quantity} units`
     );
 
     if (!confirmed) return;
@@ -127,16 +134,16 @@ export default function BloodBankDashboard() {
         alert(data.message || "Request approved and fulfilled successfully!");
       } else {
         const data = await response.json();
-        if (response.status === 400 && data.error?.includes("insufficient")) {
+        if (response.status === 400 && data.error?.message?.includes("Insufficient")) {
           // Insufficient inventory - offer to escalate
           const escalate = confirm(
-            `${data.error}\n\nWould you like to escalate this request to donors?`
+            `${data.error.message}\n\nWould you like to escalate this request to donors?`
           );
           if (escalate) {
             await handleEscalateRequest(requestId);
           }
         } else {
-          alert(data.error || "Failed to approve request");
+          alert(data.error?.message || "Failed to approve request");
         }
       }
     } catch (err) {
@@ -165,7 +172,7 @@ export default function BloodBankDashboard() {
         alert(data.message || "Request escalated to donors successfully!");
       } else {
         const data = await response.json();
-        alert(data.error || "Failed to escalate request");
+        alert(data.error?.message || "Failed to escalate request");
       }
     } catch (err) {
       alert("Error escalating request");
@@ -174,6 +181,11 @@ export default function BloodBankDashboard() {
     } finally {
       setProcessingRequestId(null);
     }
+  };
+
+  const hasSufficientInventory = (bloodGroup: string, quantityNeeded: number) => {
+    const item = inventory.find((i) => i.bloodGroup === bloodGroup);
+    return item ? item.quantity >= quantityNeeded : false;
   };
 
   const getStatusColor = (status: string) => {
@@ -307,21 +319,19 @@ export default function BloodBankDashboard() {
         <div className="flex gap-4">
           <button
             onClick={() => setActiveTab("requests")}
-            className={`pb-4 px-4 font-semibold transition-colors ${
-              activeTab === "requests"
-                ? "border-b-2 border-red-600 text-red-600"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
+            className={`pb-4 px-4 font-semibold transition-colors ${activeTab === "requests"
+              ? "border-b-2 border-red-600 text-red-600"
+              : "text-gray-600 hover:text-gray-900"
+              }`}
           >
             📋 Incoming Requests ({incomingRequests.length})
           </button>
           <button
             onClick={() => setActiveTab("inventory")}
-            className={`pb-4 px-4 font-semibold transition-colors ${
-              activeTab === "inventory"
-                ? "border-b-2 border-red-600 text-red-600"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
+            className={`pb-4 px-4 font-semibold transition-colors ${activeTab === "inventory"
+              ? "border-b-2 border-red-600 text-red-600"
+              : "text-gray-600 hover:text-gray-900"
+              }`}
           >
             🩸 Blood Inventory ({inventory.length})
           </button>
@@ -417,7 +427,54 @@ export default function BloodBankDashboard() {
                   <div className="flex gap-3">
                     {(request.status === "PENDING_APPROVAL" ||
                       request.status === "PENDING") && (
-                      <>
+                        <>
+                          <button
+                            onClick={() =>
+                              handleApproveRequest(
+                                request.id,
+                                request.bloodGroup,
+                                request.quantityNeeded
+                              )
+                            }
+                            disabled={processingRequestId === request.id || !hasSufficientInventory(request.bloodGroup, request.quantityNeeded)}
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {processingRequestId === request.id
+                              ? "Processing..."
+                              : hasSufficientInventory(request.bloodGroup, request.quantityNeeded)
+                                ? "✓ Approve & Fulfill"
+                                : "Approve (Needs Inventory)"}
+                          </button>
+                          <button
+                            onClick={() => handleEscalateRequest(request.id)}
+                            disabled={processingRequestId === request.id}
+                            className="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {processingRequestId === request.id
+                              ? "Processing..."
+                              : "⚠️ Escalate to Donors"}
+                          </button>
+                        </>
+                      )}
+                    {request.status === "ESCALATED_TO_DONORS" && (
+                      <div className="flex-1 flex flex-col gap-2 w-full">
+                        <div className="bg-orange-50 border border-orange-300 text-orange-800 px-6 py-3 rounded-lg font-semibold text-center w-full">
+                          {request.donationIntents && request.donationIntents.length > 0 ? (
+                            <div className="flex flex-col items-center">
+                              <span className="text-green-700">✅ Donor Found!</span>
+                              <div className="mt-2 text-sm text-gray-800 flex flex-col items-center">
+                                {request.donationIntents.map((intent, i) => (
+                                  <span key={i} className="bg-white px-2 py-1 rounded shadow-sm m-1">{intent.donor.firstName} {intent.donor.lastName} ({intent.donor.phone})</span>
+                                ))}
+                              </div>
+                              <div className="mt-2 text-xs opacity-80">
+                                Contact the donor to schedule the appointment. Once blood is received, you can Fulfill this request.
+                              </div>
+                            </div>
+                          ) : (
+                            "🩸 Waiting for donor volunteers"
+                          )}
+                        </div>
                         <button
                           onClick={() =>
                             handleApproveRequest(
@@ -426,27 +483,15 @@ export default function BloodBankDashboard() {
                               request.quantityNeeded
                             )
                           }
-                          disabled={processingRequestId === request.id}
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={processingRequestId === request.id || !hasSufficientInventory(request.bloodGroup, request.quantityNeeded)}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                         >
                           {processingRequestId === request.id
                             ? "Processing..."
-                            : "✓ Approve & Fulfill"}
+                            : hasSufficientInventory(request.bloodGroup, request.quantityNeeded)
+                              ? "✓ Approve & Fulfill"
+                              : "Approve (Needs Inventory)"}
                         </button>
-                        <button
-                          onClick={() => handleEscalateRequest(request.id)}
-                          disabled={processingRequestId === request.id}
-                          className="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {processingRequestId === request.id
-                            ? "Processing..."
-                            : "⚠️ Escalate to Donors"}
-                        </button>
-                      </>
-                    )}
-                    {request.status === "ESCALATED_TO_DONORS" && (
-                      <div className="flex-1 bg-orange-50 border border-orange-300 text-orange-800 px-6 py-3 rounded-lg font-semibold text-center">
-                        🩸 Waiting for donor volunteers
                       </div>
                     )}
                   </div>

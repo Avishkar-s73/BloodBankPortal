@@ -74,3 +74,35 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// DELETE /api/notifications
+// Clear all notifications for a user
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "User ID is required" },
+        { status: 400 }
+      );
+    }
+
+    await prisma.notification.deleteMany({
+      where: { userId },
+    });
+
+    return NextResponse.json(
+      { success: true, message: "Notifications cleared successfully" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Delete notifications error:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to clear notifications" },
+      { status: 500 }
+    );
+  }
+}
+

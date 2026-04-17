@@ -22,6 +22,7 @@ import {
   Lock,
   Sparkles,
 } from "lucide-react";
+import NotificationBell from "@/components/features/NotificationBell";
 
 export default function Header() {
   const pathname = usePathname();
@@ -44,29 +45,33 @@ export default function Header() {
 
   const roleLinks =
     user?.role === "DONOR"
-      ? [{ href: "/donor-dashboard", label: "Donor Dashboard", icon: Droplet }]
-      : user?.role === "HOSPITAL"
       ? [
+        { href: "/donor-dashboard", label: "Donor Dashboard", icon: Droplet },
+        { href: "/requests", label: "My Requests", icon: ClipboardList }
+      ]
+      : user?.role === "HOSPITAL"
+        ? [
           {
             href: "/hospital-dashboard",
             label: "Hospital Dashboard",
             icon: Building2,
           },
+          { href: "/requests", label: "My Requests", icon: ClipboardList },
         ]
-      : user?.role === "BLOOD_BANK"
-      ? [
-          {
-            href: "/blood-bank-dashboard",
-            label: "Blood Bank Dashboard",
-            icon: Building2,
-          },
-          { href: "/inventory", label: "Inventory", icon: Package },
-        ]
-      : [
-          { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
-          { href: "/inventory", label: "Inventory", icon: Package },
-          { href: "/requests", label: "Requests", icon: ClipboardList },
-        ];
+        : user?.role === "BLOOD_BANK"
+          ? [
+            {
+              href: "/blood-bank-dashboard",
+              label: "Blood Bank Dashboard",
+              icon: Building2,
+            },
+            { href: "/inventory", label: "Inventory", icon: Package },
+          ]
+          : [
+            { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
+            { href: "/inventory", label: "Inventory", icon: Package },
+            { href: "/requests", label: "Requests", icon: ClipboardList },
+          ];
 
   const navLinks = [
     ...baseLinks,
@@ -113,10 +118,9 @@ export default function Header() {
                       className={`
                         flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium
                         transition-all duration-200 no-underline
-                        ${
-                          isActive(link.href)
-                            ? "bg-white/20 text-white shadow-inner"
-                            : "text-white/90 hover:bg-white/10 hover:text-white"
+                        ${isActive(link.href)
+                          ? "bg-white/20 text-white shadow-inner"
+                          : "text-white/90 hover:bg-white/10 hover:text-white"
                         }
                       `}
                     >
@@ -124,6 +128,8 @@ export default function Header() {
                       <span>{link.label}</span>
                     </Link>
                   ))}
+
+                  <NotificationBell />
 
                   {/* User Menu */}
                   <div className="relative ml-2">
@@ -182,17 +188,20 @@ export default function Header() {
           )}
 
           {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden bg-white/10 hover:bg-white/20 text-white p-3 rounded-lg transition-colors"
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? (
-              <X className="w-5 h-5" />
-            ) : (
-              <Menu className="w-5 h-5" />
-            )}
-          </button>
+          <div className="flex items-center gap-2 md:hidden">
+            {user && <NotificationBell />}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="bg-white/10 hover:bg-white/20 text-white p-3 rounded-lg transition-colors"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}
@@ -208,10 +217,9 @@ export default function Header() {
                     className={`
                       flex items-center gap-3 px-4 py-3 rounded-lg font-medium
                       transition-all duration-200 no-underline
-                      ${
-                        isActive(link.href)
-                          ? "bg-white/20 text-white"
-                          : "text-white/90 hover:bg-white/10 hover:text-white"
+                      ${isActive(link.href)
+                        ? "bg-white/20 text-white"
+                        : "text-white/90 hover:bg-white/10 hover:text-white"
                       }
                     `}
                   >

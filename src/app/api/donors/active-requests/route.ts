@@ -65,11 +65,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Get compatible blood groups that this donor can donate to
-    const compatibleGroups = COMPATIBLE_BLOOD_GROUPS[donor.bloodGroup] || [donor.bloodGroup];
+    const compatibleGroups = (COMPATIBLE_BLOOD_GROUPS[donor.bloodGroup] || [donor.bloodGroup]) as any[];
+
+    // Find all requests the donor has already volunteered for
+    const existingIntents = await prisma.donationIntent.findMany({
+      where: { donorId: userId },
+      select: { requestId: true }
+    });
+    const excludedRequestIds = existingIntents.map(intent => intent.requestId);
 
     // Get active blood requests (include escalated requests so donors can see them)
     const activeRequests = await prisma.bloodRequest.findMany({
       where: {
+        id: { notIn: excludedRequestIds },
         status: { in: ["PENDING", "ESCALATED_TO_DONORS"] },
         bloodGroup: {
           in: compatibleGroups,

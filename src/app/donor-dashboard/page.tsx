@@ -93,6 +93,7 @@ export default function DonorDashboard() {
     null
   );
   const [showDonationModal, setShowDonationModal] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   useEffect(() => {
     fetchAllData();
@@ -168,8 +169,9 @@ export default function DonorDashboard() {
   };
 
   const confirmDonation = async () => {
-    if (!selectedRequest) return;
+    if (!selectedRequest || isConfirming) return;
 
+    setIsConfirming(true);
     try {
       const response = await fetch("/api/donors/donation-intent", {
         method: "POST",
@@ -187,15 +189,15 @@ export default function DonorDashboard() {
         // Show detailed success message with contact info
         alert(
           `✅ ${data.message}\n\n` +
-            `📍 Blood Bank: ${selectedRequest.bloodBank.name}\n` +
-            `📞 Contact: ${selectedRequest.bloodBank.phone}\n` +
-            `📧 Address: ${selectedRequest.bloodBank.address}, ${selectedRequest.bloodBank.city}\n\n` +
-            "⏰ Next Steps:\n" +
-            "1. The blood bank will contact you within 24 hours\n" +
-            "2. They will schedule your donation appointment\n" +
-            "3. Please arrive 15 minutes early\n" +
-            "4. Bring a valid ID and eat well before donation\n\n" +
-            "💡 You can also call them directly at the number above to schedule!"
+          `📍 Blood Bank: ${selectedRequest.bloodBank.name}\n` +
+          `📞 Contact: ${selectedRequest.bloodBank.phone}\n` +
+          `📧 Address: ${selectedRequest.bloodBank.address}, ${selectedRequest.bloodBank.city}\n\n` +
+          "⏰ Next Steps:\n" +
+          "1. The blood bank will contact you within 24 hours\n" +
+          "2. They will schedule your donation appointment\n" +
+          "3. Please arrive 15 minutes early\n" +
+          "4. Bring a valid ID and eat well before donation\n\n" +
+          "💡 You can also call them directly at the number above to schedule!"
         );
 
         setShowDonationModal(false);
@@ -207,6 +209,8 @@ export default function DonorDashboard() {
       }
     } catch (err) {
       alert("❌ Failed to schedule donation. Please try again.");
+    } finally {
+      setIsConfirming(false);
     }
   };
 
@@ -297,17 +301,14 @@ export default function DonorDashboard() {
           </div>
 
           <div
-            className={`bg-gradient-to-br ${
-              donorStats?.isEligible ? "from-green-50" : "from-yellow-50"
-            } to-white p-4 rounded-xl shadow-md border-l-4 ${
-              donorStats?.isEligible ? "border-green-500" : "border-yellow-500"
-            }`}
+            className={`bg-gradient-to-br ${donorStats?.isEligible ? "from-green-50" : "from-yellow-50"
+              } to-white p-4 rounded-xl shadow-md border-l-4 ${donorStats?.isEligible ? "border-green-500" : "border-yellow-500"
+              }`}
           >
             <div className="text-xs text-gray-600 mb-1">Eligibility</div>
             <div
-              className={`text-lg font-bold ${
-                donorStats?.isEligible ? "text-green-600" : "text-yellow-600"
-              }`}
+              className={`text-lg font-bold ${donorStats?.isEligible ? "text-green-600" : "text-yellow-600"
+                }`}
             >
               {donorStats?.isEligible ? "✅ Eligible" : "⏳ Not Yet"}
             </div>
@@ -363,11 +364,10 @@ export default function DonorDashboard() {
         <div className="flex gap-6">
           <button
             onClick={() => setActiveTab("requests")}
-            className={`pb-3 px-2 font-semibold transition-colors relative ${
-              activeTab === "requests"
+            className={`pb-3 px-2 font-semibold transition-colors relative ${activeTab === "requests"
                 ? "text-red-600 border-b-2 border-red-600"
                 : "text-gray-600 hover:text-gray-900"
-            }`}
+              }`}
           >
             🔴 Active Requests
             {activeRequests.length > 0 && (
@@ -378,21 +378,19 @@ export default function DonorDashboard() {
           </button>
           <button
             onClick={() => setActiveTab("history")}
-            className={`pb-3 px-2 font-semibold transition-colors ${
-              activeTab === "history"
+            className={`pb-3 px-2 font-semibold transition-colors ${activeTab === "history"
                 ? "text-red-600 border-b-2 border-red-600"
                 : "text-gray-600 hover:text-gray-900"
-            }`}
+              }`}
           >
             📜 Donation History
           </button>
           <button
             onClick={() => setActiveTab("stats")}
-            className={`pb-3 px-2 font-semibold transition-colors ${
-              activeTab === "stats"
+            className={`pb-3 px-2 font-semibold transition-colors ${activeTab === "stats"
                 ? "text-red-600 border-b-2 border-red-600"
                 : "text-gray-600 hover:text-gray-900"
-            }`}
+              }`}
           >
             📊 My Stats
           </button>
@@ -545,11 +543,10 @@ export default function DonorDashboard() {
                     <button
                       onClick={() => handleDonateClick(request)}
                       disabled={!donorStats?.isEligible}
-                      className={`w-full font-semibold py-3 px-6 rounded-lg transition-all transform ${
-                        donorStats?.isEligible
+                      className={`w-full font-semibold py-3 px-6 rounded-lg transition-all transform ${donorStats?.isEligible
                           ? "bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white hover:scale-[1.02] shadow-lg"
                           : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      }`}
+                        }`}
                     >
                       {donorStats?.isEligible
                         ? "🩸 I Want to Donate"
@@ -599,10 +596,10 @@ export default function DonorDashboard() {
                         {index === 0
                           ? "🏆"
                           : index === 1
-                          ? "🥈"
-                          : index === 2
-                          ? "🥉"
-                          : "🩸"}
+                            ? "🥈"
+                            : index === 2
+                              ? "🥉"
+                              : "🩸"}
                       </div>
                       <div>
                         <p className="font-semibold text-lg text-gray-900">
@@ -684,23 +681,20 @@ export default function DonorDashboard() {
                 return (
                   <div
                     key={badge.name}
-                    className={`text-center p-4 rounded-xl border-2 transition-all ${
-                      unlocked
+                    className={`text-center p-4 rounded-xl border-2 transition-all ${unlocked
                         ? "bg-gradient-to-br from-yellow-50 to-white border-yellow-300 shadow-md"
                         : "bg-gray-50 border-gray-200 opacity-50"
-                    }`}
+                      }`}
                   >
                     <div
-                      className={`text-4xl mb-2 ${
-                        unlocked ? "animate-bounce" : "grayscale"
-                      }`}
+                      className={`text-4xl mb-2 ${unlocked ? "animate-bounce" : "grayscale"
+                        }`}
                     >
                       {badge.icon}
                     </div>
                     <p
-                      className={`text-xs font-bold ${
-                        unlocked ? `text-${badge.color}-600` : "text-gray-500"
-                      }`}
+                      className={`text-xs font-bold ${unlocked ? `text-${badge.color}-600` : "text-gray-500"
+                        }`}
                     >
                       {badge.name}
                     </p>
@@ -794,13 +788,12 @@ export default function DonorDashboard() {
                 <p className="text-gray-700">
                   <strong>Urgency:</strong>{" "}
                   <span
-                    className={`font-bold ${
-                      selectedRequest.urgency === "CRITICAL"
+                    className={`font-bold ${selectedRequest.urgency === "CRITICAL"
                         ? "text-red-600"
                         : selectedRequest.urgency === "HIGH"
-                        ? "text-orange-600"
-                        : "text-green-600"
-                    }`}
+                          ? "text-orange-600"
+                          : "text-green-600"
+                      }`}
                   >
                     {selectedRequest.urgency}
                   </span>
@@ -870,9 +863,10 @@ export default function DonorDashboard() {
               </button>
               <button
                 onClick={confirmDonation}
-                className="flex-1 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-lg"
+                disabled={isConfirming}
+                className="flex-1 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Confirm Donation
+                {isConfirming ? "Confirming..." : "Confirm Donation"}
               </button>
             </div>
           </div>
